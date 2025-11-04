@@ -419,7 +419,6 @@ This project is created for the IBM SkillsBuild AI Experiential Learning Lab 202
 
 - **IBM SkillsBuild** - AI Experiential Learning Lab 2025
 - **IBM watsonx.ai** - Granite foundation models
-- **Team Members** - [Add your team members here]
 
 ---
 
