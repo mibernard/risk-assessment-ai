@@ -1,5 +1,37 @@
+# ======================================
+# Web Framework
+# ======================================
 fastapi==0.120.1
-uvicorn==0.38.0
-pydantic==2.12.3
+uvicorn[standard]==0.38.0
+
+# ======================================
+# Database
+# ======================================
 SQLAlchemy==2.0.44
-psycopg2-binary==2.9.11
+psycopg2-binary==2.9.11  # Postgres driver (for Neon)
+alembic==1.13.1          # Database migrations (optional)
+
+# ======================================
+# Data Validation & Configuration
+# ======================================
+pydantic==2.12.3
+pydantic-settings==2.0.3
+python-dotenv==1.0.0
+
+# ======================================
+# IBM watsonx.ai
+# ======================================
+ibm-watson-machine-learning==1.0.335
+ibm-cloud-sdk-core==3.16.7
+
+# ======================================
+# Utilities
+# ======================================
+python-dateutil==2.8.2
+
+# ======================================
+# Development/Testing (Optional)
+# ======================================
+# pytest==7.4.3
+# pytest-asyncio==0.21.1
+# httpx==0.25.0  # For testing FastAPI async endpoints
