@@ -31,7 +31,7 @@ A proof-of-concept AI solution that analyzes banking transactions for fraud risk
 
 - Python 3.10+
 - Node.js 18+
-- IBM watsonx.ai account (team account from IBM SkillsBuild)
+- IBM watsonx.ai account
 
 ### 1. Clone and Setup
 
