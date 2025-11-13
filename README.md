@@ -43,8 +43,21 @@ cd risk-assessment-ai
 # Backend setup
 cd backend
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+
+For MacOS/Linux:
+source venv/bin/activate
+#install requirements
 pip install -r requirements.txt
+
+For Windows:
+# Activate venv
+.\venv\Scripts\Activate.ps1
+# If activation is blocked, change execution policy and activate again:
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
+.\venv\Scripts\Activate.ps1
+#install requirements
+pip install -r requirements.txt
+
 
 # Create .env file
 DATABASE_URL=sqlite:///./dev.db
