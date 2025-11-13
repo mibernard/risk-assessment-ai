@@ -29,9 +29,9 @@ A proof-of-concept AI solution that analyzes banking transactions for fraud risk
 
 ### Prerequisites
 
-- Python 3.9+
+- Python 3.10+
 - Node.js 18+
-- IBM watsonx.ai account (team account from IBM SkillsBuild)
+- IBM watsonx.ai account
 
 ### 1. Clone and Setup
 
@@ -48,21 +48,36 @@ cd risk-assessment-ai
 
 # Backend setup (Python 3.10-3.12 recommended)
 cd backend
-python3.10 -m venv venv  # Or python3.11, python3.12
-source venv/bin/activate  # Windows: venv\Scripts\activate
+python -m venv venv
+
+For MacOS/Linux:
+source venv/bin/activate
+#install requirements
 pip install -r requirements.txt
+#if you have python version 3.13+
+pip install -r requirements-minimal.txt
 
-# If using Python 3.13+ and encountering errors:
-# pip install -r requirements-minimal.txt
+For Windows:
+# Activate venv
+.\venv\Scripts\Activate.ps1
+# If activation is blocked, change execution policy and activate again:
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
+.\venv\Scripts\Activate.ps1
+#install requirements
+pip install -r requirements.txt
+#if you have python version 3.13+
+pip install -r requirements-minimal.txt
 
-# Create .env file
-cat > .env << 'EOF'
+
+
+
+# Create .env file in backend folder with these values
 DATABASE_URL=sqlite:///./dev.db
 WATSONX_API_KEY=your_api_key_here
 WATSONX_PROJECT_ID=your_project_id_here
 WATSONX_URL=https://us-south.ml.cloud.ibm.com
 FRONTEND_URL=http://localhost:3000
-EOF
+
 
 # Frontend setup (in new terminal)
 cd ../frontend
@@ -74,7 +89,7 @@ echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > .env.local
 
 1. Go to https://dataplatform.cloud.ibm.com/wx/home?context=wx
 2. Navigate to "Developer access" section
-3. Select project: **"watsonx Challenge Sandbox"**
+3. Select project: **"AI Experimental Learning Labs Sandbox"**
 4. Copy **Project ID** and create **API Key**
 5. Update `backend/.env` with your credentials
 
@@ -191,48 +206,6 @@ risk-assessment-ai/
 └── README.md                    # This file
 ```
 
----
-
-## ✅ Current Implementation Status
-
-### Phase 1: Foundation (Completed) ✅
-
-**Backend:**
-
-- ✅ FastAPI app with 6 endpoints
-- ✅ Pydantic schemas for validation
-- ✅ 10 sample cases (in-memory database)
-- ✅ Mock AI responses
-- ✅ CORS configured
-- ✅ Swagger docs at `/docs`
-
-**Frontend:**
-
-- ✅ Dashboard with case table
-- ✅ API client with TypeScript types
-- ✅ Reusable components (RiskBadge, LoadingState, ErrorState)
-- ✅ Loading and error states
-- ✅ Responsive design
-
-**Endpoints Available:**
-
-- `GET /health` - Health check
-- `GET /cases` - List all cases
-- `GET /cases/{id}` - Get case details
-- `POST /explain` - Generate AI explanation (mock)
-- `POST /report` - Generate compliance report
-- `GET /admin/tokens` - Token usage stats
-
-### Phase 2: Coming Next 🔄
-
-- [ ] Case detail page (`/cases/[id]`)
-- [ ] Report page (`/report`)
-- [ ] Real watsonx.ai integration (replace mocks)
-- [ ] Neon Postgres connection
-- [ ] Token usage tracking
-
----
-
 ## 🧪 Testing the API
 
 ### Via Swagger UI
@@ -272,35 +245,6 @@ curl http://localhost:8000/health
 2. **Backend devs:** See [backend/README-backend.md](backend/README-backend.md)
 3. **Frontend devs:** See [frontend/README-frontend.md](frontend/README-frontend.md)
 4. **Everyone:** Review [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
-
-### Development Workflow
-
-```bash
-# 1. Create feature branch
-git checkout -b feat/your-feature
-
-# 2. Make changes
-
-# 3. Test locally
-# Backend: http://localhost:8000/docs
-# Frontend: http://localhost:3000
-
-# 4. Commit with conventional commits
-git commit -m "feat: add case detail page"
-
-# 5. Push and create PR
-git push origin feat/your-feature
-```
-
-### Team Roles
-
-See [docs/IBM_COMPLIANCE.md](docs/IBM_COMPLIANCE.md) for recommended team roles:
-
-- **Team Lead** - Coordinate meetings and progress
-- **Technical Lead** - Backend/watsonx.ai integration
-- **Solution Designer** - UI/UX and architecture
-- **Research Lead** - Prompt engineering and testing
-- **Communications Lead** - Documentation and presentation
 
 ---
 
@@ -351,40 +295,6 @@ This project fulfills IBM SkillsBuild evaluation criteria:
 
 ---
 
-## 🐛 Troubleshooting
-
-### Backend won't start
-
-```bash
-# Port 8000 already in use
-lsof -ti:8000 | xargs kill -9
-
-# Missing dependencies
-cd backend
-source venv/bin/activate
-pip install -r requirements.txt
-
-# Invalid .env
-cd backend
-python test_env.py  # Test configuration
-```
-
-### Frontend errors
-
-```bash
-# Missing dependencies
-cd frontend
-rm -rf node_modules package-lock.json
-npm install
-
-# Wrong API URL
-# Check .env.local has: NEXT_PUBLIC_API_URL=http://localhost:8000
-
-# Can't connect to backend
-# Ensure backend is running at http://localhost:8000
-curl http://localhost:8000/health
-```
-
 ### watsonx.ai issues
 
 See [docs/WATSONX_INTEGRATION.md](docs/WATSONX_INTEGRATION.md) for:
@@ -428,7 +338,3 @@ This project is created for the IBM SkillsBuild AI Experiential Learning Lab 202
 
 - **IBM SkillsBuild** - AI Experiential Learning Lab 2025
 - **IBM watsonx.ai** - Granite foundation models
-
----
-
-**Built with ❤️ for IBM SkillsBuild 2025**
