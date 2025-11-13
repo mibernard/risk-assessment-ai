@@ -24,6 +24,7 @@ export default function DashboardPage() {
   const [queryName, setQueryName] = useState<string | number>("");
   const [queryCountry, setQueryCountry] = useState<string | number>("");
   const [risk, setRisk] = useState<string>("1000");
+  const [status, setStatus] = useState<string>("all");
 
   const fetchCases = async () => {
     try {
@@ -38,8 +39,19 @@ export default function DashboardPage() {
     }
   };
 
+  const sortCases = (sort : string) => {
+    const sortedCases = [...cases];
+    if (sort === "amount") {
+      sortedCases.sort((a, b) => b.amount - a.amount);
+    } else if (sort === "date") {
+      sortedCases.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+    setCases(sortedCases);
+  }
+
   useEffect(() => {
     fetchCases();
+    sortCases("");
   }, []);
 
   const handleRowClick = (caseId: string) => {
@@ -115,12 +127,29 @@ export default function DashboardPage() {
               <input className="border rounded-md w-50 px-2" placeholder="Search Name" value={queryName} onChange={(e) => setQueryName(e.target.value)}/>
               <input className="border rounded-md w-50 px-2" placeholder="Search Country" value={queryCountry} onChange={(e) => setQueryCountry(e.target.value)}/>
               <div className="flex px-2 gap-2">
-                <label>Select Risk</label>
+                <label>Select Risk:</label>
                   <select className="border rounded-md px-2" id="riskDropDown" name="riskSelection" onChange={(e) => setRisk(e.target.value)}>
                     <option value={1000}>All</option>
                     <option value={0}>Low Risk</option>
                     <option value={0.4}>Medium Risk</option>
                     <option value={0.7}>High Risk</option>
+                  </select>
+              </div>
+              <div className="flex px-2 gap-2">
+                <label>Select Status:</label>
+                  <select className="border rounded-md px-2" id="statusDropDown" name="statusSelection" onChange={(e) => setStatus(e.target.value)}>
+                    <option value="all">All</option>
+                    <option value="new">New</option>
+                    <option value="reviewing">Reviewing</option>
+                    <option value="resolved">Resolved</option>
+                  </select>
+              </div>
+              <div className="flex px-2 gap-2">
+                <label>Sort by:</label>
+                  <select className="border rounded-md px-2" id="sortDropDown" name="sortSelection" onChange={(e) => sortCases(e.target.value)}>
+                    <option value="n/a"></option>
+                    <option value="amount">Amount</option>
+                    <option value="date">Date</option>
                   </select>
               </div>
             </div>
@@ -168,7 +197,7 @@ export default function DashboardPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   { /* this filtering is absolute cancer but it works */}
-                  {cases.filter((caseItem) => (caseItem.customer_name.toLowerCase().includes(queryName.toString().toLowerCase()) && caseItem.country.toLowerCase().includes(queryCountry.toString().toLowerCase()) && (risk === "0.7" ? caseItem.risk_score >= 0.7 : (risk === "0.4" ? caseItem.risk_score < 0.7 && caseItem.risk_score >= 0.4 : (risk === "0" ? caseItem.risk_score >= 0 && caseItem.risk_score < 0.4 : caseItem.risk_score >= 0))))).map((caseItem) => (
+                  {cases.filter((caseItem) => (caseItem.customer_name.toLowerCase().includes(queryName.toString().toLowerCase()) && caseItem.country.toLowerCase().includes(queryCountry.toString().toLowerCase()) && (risk === "0.7" ? caseItem.risk_score >= 0.7 : (risk === "0.4" ? caseItem.risk_score < 0.7 && caseItem.risk_score >= 0.4 : (risk === "0" ? caseItem.risk_score >= 0 && caseItem.risk_score < 0.4 : caseItem.risk_score >= 0))) && (status === "all" ? caseItem.status.includes("") : caseItem.status === status))).map((caseItem) => (
                     <tr
                       key={caseItem.id}
                       onClick={() => handleRowClick(caseItem.id)}
