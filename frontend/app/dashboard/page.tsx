@@ -7,7 +7,7 @@
  * Users can click on rows to view case details.
  */
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getCases, formatCurrency, formatDateTime, type Case } from "@/lib/api";
@@ -21,6 +21,9 @@ export default function DashboardPage() {
   const [cases, setCases] = useState<Case[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [queryName, setQueryName] = useState<string | number>("");
+  const [queryCountry, setQueryCountry] = useState<string | number>("");
+  const [risk, setRisk] = useState<number>(0);
 
   const fetchCases = async () => {
     try {
@@ -53,9 +56,11 @@ export default function DashboardPage() {
               <h1 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
                 Risk Assessment Dashboard
               </h1>
-              <p className="mt-1 text-sm text-gray-500">
-                Flagged banking transactions requiring review
-              </p>
+              <div className="flex gap-2">
+                <p className="mt-1 text-sm text-gray-500">
+                  Flagged banking transactions requiring review
+                </p>
+              </div>
             </div>
             <div className="mt-4 flex md:mt-0 md:ml-4">
               <Link
@@ -103,10 +108,21 @@ export default function DashboardPage() {
 
         {!loading && !error && cases.length > 0 && (
           <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
+            <div className="px-4 py-5 sm:px-6 border-b border-gray-200 flex gap-4">
               <h3 className="text-lg leading-6 font-medium text-gray-900">
                 Flagged Transactions ({cases.length})
               </h3>
+              <input className="border rounded-md w-50 px-2" placeholder="Search Name" value={queryName} onChange={(e) => setQueryName(e.target.value)}/>
+              <input className="border rounded-md w-50 px-2" placeholder="Search Country" value={queryCountry} onChange={(e) => setQueryCountry(e.target.value)}/>
+              <div className="flex border rounded-md px-2 gap-4">
+                <label>Select Risk</label>
+                  <select id="riskDropDown" name="riskSelection" onChange={(e) => setRisk(e.target.value)}>
+                    <option value="option1"></option>
+                    <option value={0}>Low Risk</option>
+                    <option value={0.5}>Medium Risk</option>
+                    <option value={0.7}>High Risk</option>
+                  </select>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -151,6 +167,35 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
+                  
+                  {cases.filter((caseItem) => (caseItem.customer_name.toLowerCase().includes(queryName.toString().toLowerCase()) && caseItem.country.toLowerCase().includes(queryCountry.toString().toLowerCase()))).map((caseItem) => (
+                    <tr
+                      key={caseItem.id}
+                      onClick={() => handleRowClick(caseItem.id)}
+                      className="hover:bg-gray-50 cursor-pointer transition-colors"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {caseItem.customer_name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatCurrency(caseItem.amount)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {caseItem.country}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <RiskBadge score={caseItem.risk_score} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <StatusBadge status={caseItem.status} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDateTime(caseItem.created_at)}
+                      </td>
+                    </tr>
+                  ))}
+                  
+                  {/*}
                   {cases.map((caseItem) => (
                     <tr
                       key={caseItem.id}
@@ -177,6 +222,7 @@ export default function DashboardPage() {
                       </td>
                     </tr>
                   ))}
+                  */}
                 </tbody>
               </table>
             </div>

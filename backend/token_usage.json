@@ -1,7 +1,7 @@
 {
-  "total_tokens": 1314,
-  "total_requests": 5,
-  "total_cost_usd": 0.0001314,
+  "total_tokens": 1553,
+  "total_requests": 6,
+  "total_cost_usd": 0.0001553,
   "requests": [
     {
       "timestamp": "2025-11-12T17:56:03.038703",
@@ -54,6 +54,17 @@
       "timestamp": "2025-11-12T18:33:59.526418",
       "tokens": 244,
       "cost_usd": 2.44e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/report",
+      "metadata": {
+        "total_cases": 7,
+        "high_risk_count": 4
+      }
+    },
+    {
+      "timestamp": "2025-11-12T22:31:41.042310",
+      "tokens": 239,
+      "cost_usd": 2.39e-05,
       "model": "ibm/granite-3-2-8b-instruct",
       "endpoint": "/report",
       "metadata": {
