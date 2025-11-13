@@ -23,7 +23,7 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [queryName, setQueryName] = useState<string | number>("");
   const [queryCountry, setQueryCountry] = useState<string | number>("");
-  const [risk, setRisk] = useState<number>(0);
+  const [risk, setRisk] = useState<string>("1000");
 
   const fetchCases = async () => {
     try {
@@ -114,12 +114,12 @@ export default function DashboardPage() {
               </h3>
               <input className="border rounded-md w-50 px-2" placeholder="Search Name" value={queryName} onChange={(e) => setQueryName(e.target.value)}/>
               <input className="border rounded-md w-50 px-2" placeholder="Search Country" value={queryCountry} onChange={(e) => setQueryCountry(e.target.value)}/>
-              <div className="flex border rounded-md px-2 gap-4">
+              <div className="flex px-2 gap-2">
                 <label>Select Risk</label>
-                  <select id="riskDropDown" name="riskSelection" onChange={(e) => setRisk(e.target.value)}>
-                    <option value="option1"></option>
+                  <select className="border rounded-md px-2" id="riskDropDown" name="riskSelection" onChange={(e) => setRisk(e.target.value)}>
+                    <option value={1000}>All</option>
                     <option value={0}>Low Risk</option>
-                    <option value={0.5}>Medium Risk</option>
+                    <option value={0.4}>Medium Risk</option>
                     <option value={0.7}>High Risk</option>
                   </select>
               </div>
@@ -167,8 +167,8 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  
-                  {cases.filter((caseItem) => (caseItem.customer_name.toLowerCase().includes(queryName.toString().toLowerCase()) && caseItem.country.toLowerCase().includes(queryCountry.toString().toLowerCase()))).map((caseItem) => (
+                  { /* this filtering is absolute cancer but it works */}
+                  {cases.filter((caseItem) => (caseItem.customer_name.toLowerCase().includes(queryName.toString().toLowerCase()) && caseItem.country.toLowerCase().includes(queryCountry.toString().toLowerCase()) && (risk === "0.7" ? caseItem.risk_score >= 0.7 : (risk === "0.4" ? caseItem.risk_score < 0.7 && caseItem.risk_score >= 0.4 : (risk === "0" ? caseItem.risk_score >= 0 && caseItem.risk_score < 0.4 : caseItem.risk_score >= 0))))).map((caseItem) => (
                     <tr
                       key={caseItem.id}
                       onClick={() => handleRowClick(caseItem.id)}
