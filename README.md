@@ -59,7 +59,7 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
 pip install -r requirements.txt
 
 
-# Create .env file
+# Create .env file in backend folder with these values
 DATABASE_URL=sqlite:///./dev.db
 WATSONX_API_KEY=your_api_key_here
 WATSONX_PROJECT_ID=your_project_id_here
