@@ -51,7 +51,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchCases();
-    sortCases("");
   }, []);
 
   const handleRowClick = (caseId: string) => {
