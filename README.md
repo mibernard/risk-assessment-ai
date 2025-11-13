@@ -64,7 +64,7 @@ echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > .env.local
 
 1. Go to https://dataplatform.cloud.ibm.com/wx/home?context=wx
 2. Navigate to "Developer access" section
-3. Select project: **"watsonx Challenge Sandbox"**
+3. Select project: **"AI Experimental Learning Labs Sandbox"**
 4. Copy **Project ID** and create **API Key**
 5. Update `backend/.env` with your credentials
 
