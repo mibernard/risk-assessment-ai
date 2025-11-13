@@ -1,0 +1,43 @@
+{
+  "total_tokens": 793,
+  "total_requests": 3,
+  "total_cost_usd": 7.93e-05,
+  "requests": [
+    {
+      "timestamp": "2025-11-12T17:56:03.038703",
+      "tokens": 277,
+      "cost_usd": 2.7700000000000002e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/explain",
+      "metadata": {
+        "customer": "Alice Johnson",
+        "amount": 5300.0,
+        "risk_score": 0.82
+      }
+    },
+    {
+      "timestamp": "2025-11-12T18:01:28.684257",
+      "tokens": 239,
+      "cost_usd": 2.39e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/report",
+      "metadata": {
+        "total_cases": 7,
+        "high_risk_count": 4
+      }
+    },
+    {
+      "timestamp": "2025-11-12T18:05:56.861101",
+      "tokens": 277,
+      "cost_usd": 2.7700000000000002e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/explain",
+      "metadata": {
+        "customer": "Alice Johnson",
+        "amount": 5300.0,
+        "risk_score": 0.82
+      }
+    }
+  ],
+  "started_at": "2025-11-12T17:55:09.739695"
+}

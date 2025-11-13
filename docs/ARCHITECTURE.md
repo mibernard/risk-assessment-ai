@@ -167,7 +167,7 @@ FastAPI:
   3. Call watsonx.ai SDK
      POST https://us-south.ml.cloud.ibm.com/ml/v1/text/generation
      Body: {
-       model_id: "ibm/granite-13b-instruct-v2",
+       model_id: "ibm/granite-3-2-8b-instruct",
        input: "<prompt>",
        parameters: { max_new_tokens: 500 }
      }

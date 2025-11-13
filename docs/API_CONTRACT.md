@@ -24,7 +24,7 @@ interface Case {
 
   // watsonx.ai metadata (optional, populated after /explain)
   explanation_generated?: boolean;
-  model_version?: string; // e.g., "granite-13b-instruct-v2"
+  model_version?: string; // e.g., "granite-3-2-8b-instruct"
   tokens_used?: number;
 }
 ```
@@ -65,7 +65,7 @@ interface Explanation {
   recommended_action: string; // Action for compliance officer
 
   // watsonx.ai tracking
-  model_used: string; // "ibm/granite-13b-instruct-v2"
+  model_used: string; // "ibm/granite-3-2-8b-instruct"
   tokens_consumed: number; // Token count for this request
   generation_time_ms: number; // Latency measurement
   created_at: string; // ISO 8601 timestamp
@@ -80,7 +80,7 @@ interface Explanation {
   "confidence": 0.89,
   "rationale": "Transaction involves high-risk country with amount significantly above customer's typical domestic transfers. Pattern inconsistent with 6-month transaction history.",
   "recommended_action": "Hold transaction for 24h. Request ID verification, proof of address, and source of funds documentation.",
-  "model_used": "ibm/granite-13b-instruct-v2",
+  "model_used": "ibm/granite-3-2-8b-instruct",
   "tokens_consumed": 342,
   "generation_time_ms": 1847,
   "created_at": "2025-01-15T10:31:00Z"
@@ -197,7 +197,7 @@ Retrieve detailed information for a specific case.
   "status": "new",
   "created_at": "2025-01-15T10:30:00Z",
   "explanation_generated": true,
-  "model_version": "granite-13b-instruct-v2"
+  "model_version": "granite-3-2-8b-instruct"
 }
 ```
 
@@ -230,7 +230,7 @@ Request watsonx.ai to generate a risk assessment explanation for a case.
   "confidence": 0.89,
   "rationale": "Transaction involves high-risk country with amount significantly above customer's typical domestic transfers.",
   "recommended_action": "Hold transaction for 24h. Request ID verification.",
-  "model_used": "ibm/granite-13b-instruct-v2",
+  "model_used": "ibm/granite-3-2-8b-instruct",
   "tokens_consumed": 342,
   "generation_time_ms": 1847,
   "created_at": "2025-01-15T10:31:00Z"

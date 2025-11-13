@@ -38,7 +38,7 @@ This document outlines all IBM SkillsBuild-specific requirements, data complianc
 
 **✅ ALLOWED**:
 - `ibm/granite-3-1-8b-instruct`
-- `ibm/granite-13b-instruct-v2`
+- `ibm/granite-3-2-8b-instruct`
 - `ibm/granite-13b-chat-v2`
 - `ibm/granite-20b-multilingual`
 - `meta-llama/llama-3-70b-instruct`
@@ -53,7 +53,7 @@ This document outlines all IBM SkillsBuild-specific requirements, data complianc
 - `mistral-small-3-1-24b-instruct-2503`
 - `pixtral-12b`
 
-**Recommended for this project**: `ibm/granite-13b-instruct-v2`
+**Recommended for this project**: `ibm/granite-3-2-8b-instruct`
 
 ### Budget & Token Management
 
@@ -226,7 +226,7 @@ Our AI-powered risk assessment system uses IBM watsonx.ai...
 ### 4. Technology Documentation
 
 **Must document**:
-- watsonx.ai model used (`granite-13b-instruct-v2`)
+- watsonx.ai model used (`granite-3-2-8b-instruct`)
 - Prompt engineering approach
 - Token usage statistics
 - Architecture diagram

@@ -63,7 +63,7 @@ credentials = {
 
 # Initialize model
 model = Model(
-    model_id="ibm/granite-13b-instruct-v2",
+    model_id="ibm/granite-3-2-8b-instruct",
     params={
         GenParams.DECODING_METHOD: "greedy",
         GenParams.MAX_NEW_TOKENS: 100
@@ -117,7 +117,7 @@ class WatsonXService:
             "apikey": os.getenv("WATSONX_API_KEY")
         }
         self.project_id = os.getenv("WATSONX_PROJECT_ID")
-        self.model_id = "ibm/granite-13b-instruct-v2"
+        self.model_id = "ibm/granite-3-2-8b-instruct"
         self.token_tracker = TokenTracker(budget_usd=250.0)
         
         # Validate credentials
@@ -487,7 +487,7 @@ def test_generate_explanation(watsonx):
 ### Manual Testing in Prompt Lab
 
 1. Open Prompt Lab: https://dataplatform.cloud.ibm.com/wx/home?context=wx
-2. Select `ibm/granite-13b-instruct-v2`
+2. Select `ibm/granite-3-2-8b-instruct`
 3. Paste prompt from `docs/AI_PROMPTS.md`
 4. Test with different risk scenarios
 5. Validate response quality

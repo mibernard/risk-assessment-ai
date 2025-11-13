@@ -2,7 +2,7 @@
 
 ## Model Configuration
 
-**Primary Model**: `ibm/granite-13b-instruct-v2`  
+**Primary Model**: `ibm/granite-3-2-8b-instruct`  
 **Fallback Model**: `ibm/granite-8b-japanese` (if primary unavailable)
 
 **Generation Parameters**:
@@ -291,7 +291,7 @@ If watsonx.ai is unavailable:
 ## Testing Prompts in Prompt Lab
 
 1. Log in to watsonx.ai Prompt Lab
-2. Select `ibm/granite-13b-instruct-v2` model
+2. Select `ibm/granite-3-2-8b-instruct` model
 3. Paste template prompt with sample variables
 4. Set parameters (temperature=0.3, max_tokens=500)
 5. Click "Generate" and evaluate response quality

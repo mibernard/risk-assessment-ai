@@ -24,6 +24,7 @@ from schemas import (
     ErrorResponse,
     StatusDistribution,
 )
+from services.watsonx_service import WatsonXService
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -36,6 +37,9 @@ app = FastAPI(
 
 # Load settings
 settings = get_settings()
+
+# Initialize watsonx.ai service
+watsonx_service = WatsonXService()
 
 # Configure CORS
 app.add_middleware(
@@ -72,7 +76,7 @@ CASES_DB = {
         "status": "reviewing",
         "created_at": datetime.now() - timedelta(hours=5),
         "explanation_generated": True,
-        "model_version": "granite-13b-instruct-v2",
+        "model_version": "granite-3-2-8b-instruct",
         "tokens_used": 287,
     },
     "770e8400-e29b-41d4-a716-446655440002": {
@@ -84,7 +88,7 @@ CASES_DB = {
         "status": "resolved",
         "created_at": datetime.now() - timedelta(days=1),
         "explanation_generated": True,
-        "model_version": "granite-13b-instruct-v2",
+        "model_version": "granite-3-2-8b-instruct",
         "tokens_used": 245,
     },
     "880e8400-e29b-41d4-a716-446655440003": {
@@ -106,7 +110,7 @@ CASES_DB = {
         "status": "reviewing",
         "created_at": datetime.now() - timedelta(hours=8),
         "explanation_generated": True,
-        "model_version": "granite-13b-instruct-v2",
+        "model_version": "granite-3-2-8b-instruct",
         "tokens_used": 312,
     },
     "aa0e8400-e29b-41d4-a716-446655440005": {
@@ -128,7 +132,7 @@ CASES_DB = {
         "status": "reviewing",
         "created_at": datetime.now() - timedelta(hours=6),
         "explanation_generated": True,
-        "model_version": "granite-13b-instruct-v2",
+        "model_version": "granite-3-2-8b-instruct",
         "tokens_used": 356,
     },
     "cc0e8400-e29b-41d4-a716-446655440007": {
@@ -140,7 +144,7 @@ CASES_DB = {
         "status": "resolved",
         "created_at": datetime.now() - timedelta(days=2),
         "explanation_generated": True,
-        "model_version": "granite-13b-instruct-v2",
+        "model_version": "granite-3-2-8b-instruct",
         "tokens_used": 198,
     },
     "dd0e8400-e29b-41d4-a716-446655440008": {
@@ -162,18 +166,10 @@ CASES_DB = {
         "status": "resolved",
         "created_at": datetime.now() - timedelta(days=3),
         "explanation_generated": True,
-        "model_version": "granite-13b-instruct-v2",
+        "model_version": "granite-3-2-8b-instruct",
         "tokens_used": 223,
     },
 }
-
-# Mock token usage tracking (will be replaced in Phase 2)
-TOKEN_TRACKER = {
-    "tokens_used": 1621,  # Sum of tokens from cases above
-    "requests_count": 6,
-    "spent_usd": 0.16,
-}
-
 
 # ===================================
 # API Routes
@@ -199,11 +195,17 @@ async def health_check():
     """
     Check API health status including database and watsonx.ai connectivity.
     """
+    # Check watsonx.ai availability
+    watsonx_status = "available" if watsonx_service.is_available() else "unavailable"
+    
+    # Get token budget remaining
+    token_usage = watsonx_service.get_token_usage()
+    
     return HealthResponse(
         status="healthy",
         database="connected",  # Will check real DB in Phase 3
-        watsonx_api="available" if settings.watsonx_api_key else "unavailable",
-        token_budget_remaining=settings.token_budget_usd - TOKEN_TRACKER["spent_usd"],
+        watsonx_api=watsonx_status,
+        token_budget_remaining=token_usage["remaining_usd"],
     )
 
 
@@ -283,8 +285,8 @@ async def explain_case(request: ExplanationRequest):
     """
     Generate AI explanation for a case using watsonx.ai.
     
-    **Phase 1**: Returns mock response.  
-    **Phase 2**: Will integrate real watsonx.ai SDK.
+    **Phase 2**: Integrated with IBM watsonx.ai Granite-13b-instruct-v2.
+    Falls back to mock responses if watsonx.ai is unavailable.
     
     Args:
         request: Explanation request with case_id.
@@ -293,7 +295,7 @@ async def explain_case(request: ExplanationRequest):
         AI-generated explanation with rationale and recommended action.
         
     Raises:
-        HTTPException: 404 if case not found, 503 if AI unavailable.
+        HTTPException: 404 if case not found, 503 if AI unavailable, 429 if budget exceeded.
     """
     # Check if case exists
     if request.case_id not in CASES_DB:
@@ -304,8 +306,55 @@ async def explain_case(request: ExplanationRequest):
     
     case = CASES_DB[request.case_id]
     
-    # Mock explanation based on risk score (Phase 1)
-    # Will be replaced with real watsonx.ai call in Phase 2
+    # Try to use real watsonx.ai (Phase 2)
+    if watsonx_service.is_available():
+        try:
+            # Generate explanation using watsonx.ai
+            result = watsonx_service.generate_explanation(
+                customer_name=case["customer_name"],
+                amount=case["amount"],
+                country=case["country"],
+                risk_score=case["risk_score"],
+            )
+            
+            # Create response
+            explanation = ExplanationResponse(
+                case_id=request.case_id,
+                confidence=result["confidence"],
+                rationale=result["rationale"],
+                recommended_action=result["recommended_action"],
+                model_used=watsonx_service.MODEL_ID,
+                tokens_consumed=result["tokens_consumed"],
+                generation_time_ms=result["generation_time_ms"],
+                created_at=datetime.now(),
+            )
+            
+            # Update case metadata
+            CASES_DB[request.case_id]["explanation_generated"] = True
+            CASES_DB[request.case_id]["model_version"] = watsonx_service.MODEL_ID
+            CASES_DB[request.case_id]["tokens_used"] = result["tokens_consumed"]
+            
+            # Check for budget warnings
+            has_warning, warning_msg = watsonx_service.check_budget_status()
+            if has_warning:
+                print(warning_msg)
+            
+            return explanation
+            
+        except Exception as e:
+            error_msg = str(e)
+            
+            # Handle specific errors
+            if "budget exceeded" in error_msg.lower():
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail="Token budget exceeded. Cannot generate more explanations.",
+                )
+            
+            # For other errors, log and fall back to mock
+            print(f"⚠️ watsonx.ai error (falling back to mock): {error_msg}")
+    
+    # Fallback: Mock response (Phase 1 behavior)
     if case["risk_score"] >= 0.8:
         rationale = (
             f"Transaction of ${case['amount']:,.2f} from {case['country']} "
@@ -352,9 +401,9 @@ async def explain_case(request: ExplanationRequest):
         confidence=confidence,
         rationale=rationale,
         recommended_action=action,
-        model_used="mock-granite-13b-instruct-v2",  # "mock-" prefix in Phase 1
-        tokens_consumed=0,  # No tokens used for mock
-        generation_time_ms=50,  # Simulated latency
+        model_used="mock-granite-13b-instruct-v2",
+        tokens_consumed=0,
+        generation_time_ms=50,
         created_at=datetime.now(),
     )
     
@@ -417,9 +466,34 @@ async def generate_report(request: ReportRequest = ReportRequest()):
         period_end = datetime.now()
     
     # Generate summary
-    if request.include_ai_summary:
-        # Phase 1: Mock summary
-        # Phase 2: Will use watsonx.ai
+    if request.include_ai_summary and watsonx_service.is_available():
+        try:
+            # Phase 2: Use watsonx.ai for summary
+            result = watsonx_service.generate_report_summary(
+                total_cases=total_cases,
+                high_risk_count=high_risk,
+                medium_risk_count=medium_risk,
+                low_risk_count=low_risk,
+                avg_risk=avg_risk,
+                total_amount=total_amount,
+            )
+            summary = result["summary"]
+            
+            # Check for budget warnings
+            has_warning, warning_msg = watsonx_service.check_budget_status()
+            if has_warning:
+                print(warning_msg)
+                
+        except Exception as e:
+            # Fallback to simple summary if AI fails
+            print(f"⚠️ watsonx.ai report summary failed: {e}")
+            summary = (
+                f"{high_risk} high-risk transactions detected. "
+                f"Primary concerns: international transfers and large amounts. "
+                f"Recommend enhanced monitoring of cross-border transactions >${total_amount/total_cases:,.0f}."
+            )
+    elif request.include_ai_summary:
+        # Fallback: Mock summary when watsonx.ai unavailable
         summary = (
             f"{high_risk} high-risk transactions detected. "
             f"Primary concerns: international transfers and large amounts. "
@@ -459,14 +533,14 @@ async def get_token_usage():
     Returns:
         Token usage statistics including spent and remaining budget.
     """
-    spent = TOKEN_TRACKER["spent_usd"]
-    total_budget = settings.token_budget_usd
+    # Get real token usage from watsonx service
+    usage = watsonx_service.get_token_usage()
     
     return TokenUsageResponse(
-        total_budget_usd=total_budget,
-        spent_usd=spent,
-        remaining_usd=total_budget - spent,
-        tokens_used=TOKEN_TRACKER["tokens_used"],
-        requests_count=TOKEN_TRACKER["requests_count"],
-        percentage_used=round((spent / total_budget) * 100, 2),
+        total_budget_usd=usage["total_budget_usd"],
+        spent_usd=usage["spent_usd"],
+        remaining_usd=usage["remaining_usd"],
+        tokens_used=usage["tokens_used"],
+        requests_count=usage["requests_count"],
+        percentage_used=usage["percentage_used"],
     )
