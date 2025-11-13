@@ -37,7 +37,9 @@ A proof-of-concept AI solution that analyzes banking transactions for fraud risk
 
 **Prerequisites:**
 
-- **Python 3.10 - 3.12** (recommended) or Python 3.13+ with limitations
+- **Python 3.10 - 3.12** (recommended)
+  - ⚠️ **Windows users**: Python 3.13+ will fail - use 3.10-3.12
+  - macOS/Linux: Python 3.13+ may work with limitations
 - **Node.js 18+** for frontend
 - **IBM watsonx.ai** credentials (see step 2)
 

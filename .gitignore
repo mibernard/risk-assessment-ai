@@ -14,7 +14,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+lib/         # Python lib folder (venv packages)
+!frontend/lib/   # BUT allow frontend/lib (Next.js source code)
 lib64/
 parts/
 sdist/

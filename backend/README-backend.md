@@ -6,7 +6,8 @@
 
 **Python Version**: 3.10 - 3.12 (recommended)
 
-- Python 3.13+ may have compatibility issues with some binary packages
+- ⚠️ **Windows users**: Python 3.13+ will FAIL due to missing binary wheels - use 3.10-3.12
+- macOS/Linux: Python 3.13+ may work with `requirements-minimal.txt`
 - Check your version: `python3 --version` or `python3.10 --version`
 
 ### 1. Setup Virtual Environment
