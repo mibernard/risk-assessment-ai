@@ -1,33 +1,38 @@
 # ======================================
-# Web Framework
+# Python Version: 3.10 - 3.12 recommended
+# Python 3.13+ may have compatibility issues with some binary packages
 # ======================================
-fastapi==0.120.1
-uvicorn[standard]==0.38.0
 
 # ======================================
-# Database
+# Web Framework
 # ======================================
-SQLAlchemy==2.0.44
-psycopg2-binary==2.9.11  # Postgres driver (for Neon)
-alembic==1.13.1          # Database migrations (optional)
+fastapi>=0.115.0,<0.121.0
+uvicorn[standard]>=0.30.0,<0.40.0
+
+# ======================================
+# Database (Optional - only needed for Phase 3)
+# ======================================
+SQLAlchemy>=2.0.0,<2.1.0
+psycopg2-binary>=2.9.0,<3.0.0; python_version < '3.13'  # Not available for Python 3.13 yet
+alembic>=1.13.0,<2.0.0
 
 # ======================================
 # Data Validation & Configuration
 # ======================================
-pydantic==2.12.3
-pydantic-settings==2.0.3
-python-dotenv==1.0.0
+pydantic>=2.8.0,<3.0.0
+pydantic-settings>=2.0.0,<3.0.0
+python-dotenv>=1.0.0
 
 # ======================================
-# IBM watsonx.ai
+# IBM watsonx.ai (Core dependency)
 # ======================================
-ibm-watson-machine-learning==1.0.335
-ibm-cloud-sdk-core==3.16.7
+ibm-watson-machine-learning>=1.0.335,<2.0.0
+ibm-cloud-sdk-core>=3.16.0,<4.0.0
 
 # ======================================
 # Utilities
 # ======================================
-python-dateutil==2.8.2
+python-dateutil>=2.8.0
 
 # ======================================
 # Development/Testing (Optional)

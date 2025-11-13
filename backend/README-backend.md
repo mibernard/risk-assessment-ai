@@ -2,14 +2,38 @@
 
 ## Quick Start
 
+### Prerequisites
+
+**Python Version**: 3.10 - 3.12 (recommended)
+
+- Python 3.13+ may have compatibility issues with some binary packages
+- Check your version: `python3 --version` or `python3.10 --version`
+
 ### 1. Setup Virtual Environment
+
+**For Python 3.10 - 3.12 (Recommended):**
 
 ```bash
 cd backend
-python -m venv venv
+python3.10 -m venv venv  # Use python3.10, python3.11, or python3.12
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
+
+**For Python 3.13+ (If you encounter issues):**
+
+```bash
+cd backend
+python3.13 -m venv venv
+source venv/bin/activate
+pip install -r requirements-minimal.txt  # Skips database packages
+```
+
+**Troubleshooting Installation Issues:**
+
+- If you get errors with `psycopg2-binary`, use `requirements-minimal.txt`
+- If `ibm-watson-machine-learning` fails, ensure you have Python 3.10+
+- On macOS, you may need to install Python 3.10+ via Homebrew: `brew install python@3.10`
 
 ### 2. Configure Environment
 

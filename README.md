@@ -35,16 +35,25 @@ A proof-of-concept AI solution that analyzes banking transactions for fraud risk
 
 ### 1. Clone and Setup
 
+**Prerequisites:**
+
+- **Python 3.10 - 3.12** (recommended) or Python 3.13+ with limitations
+- **Node.js 18+** for frontend
+- **IBM watsonx.ai** credentials (see step 2)
+
 ```bash
 # Clone the repository
 git clone https://github.com/your-team/risk-assessment-ai.git
 cd risk-assessment-ai
 
-# Backend setup
+# Backend setup (Python 3.10-3.12 recommended)
 cd backend
-python -m venv venv
+python3.10 -m venv venv  # Or python3.11, python3.12
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
+
+# If using Python 3.13+ and encountering errors:
+# pip install -r requirements-minimal.txt
 
 # Create .env file
 cat > .env << 'EOF'

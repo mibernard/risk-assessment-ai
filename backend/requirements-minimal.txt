@@ -1,0 +1,25 @@
+# ======================================
+# Minimal Requirements for Python 3.13+
+# Use this if you encounter issues with requirements.txt
+# Skips database dependencies (not needed for Phase 1-2)
+# ======================================
+
+# Web Framework
+fastapi>=0.115.0,<0.121.0
+uvicorn[standard]>=0.30.0,<0.40.0
+
+# Data Validation & Configuration
+pydantic>=2.8.0,<3.0.0
+pydantic-settings>=2.0.0,<3.0.0
+python-dotenv>=1.0.0
+
+# IBM watsonx.ai (Core dependency)
+ibm-watson-machine-learning>=1.0.335,<2.0.0
+ibm-cloud-sdk-core>=3.16.0,<4.0.0
+
+# Utilities
+python-dateutil>=2.8.0
+
+# Note: Database packages (SQLAlchemy, psycopg2-binary, alembic) are excluded
+# They're only needed for Phase 3 and may not support Python 3.13 yet
+
