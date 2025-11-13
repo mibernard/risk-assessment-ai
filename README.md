@@ -47,13 +47,12 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # Create .env file
-cat > .env << 'EOF'
 DATABASE_URL=sqlite:///./dev.db
 WATSONX_API_KEY=your_api_key_here
 WATSONX_PROJECT_ID=your_project_id_here
 WATSONX_URL=https://us-south.ml.cloud.ibm.com
 FRONTEND_URL=http://localhost:3000
-EOF
+
 
 # Frontend setup (in new terminal)
 cd ../frontend
