@@ -17,6 +17,8 @@ from schemas import (
     CaseResponse,
     ExplanationRequest,
     ExplanationResponse,
+    RiskCategoryRequest,
+    RiskCategoryResponse,
     RiskScoreRequest,
     RiskScoreResponse,
     HealthResponse,
@@ -166,6 +168,9 @@ EXPLANATIONS_DB = {}
 
 # Store risk scores separately (keyed by case_id)
 RISK_SCORES_DB = {}
+
+# Store risk categories separately (keyed by case_id)
+RISK_CATEGORIES_DB = {}
 
 # ===================================
 # API Routes
@@ -479,6 +484,81 @@ async def get_risk_score(case_id: str):
     
     return RISK_SCORES_DB[case_id]
 
+@app.get(
+        "/risk-categorize/{case_id}",
+        response_model=RiskCategoryResponse,
+        tags=["AI"],
+        summary="Categorize risk level",
+        description="Categorize a case into risk categories like fraud, AML, sanctions.",
+        responses={
+            404: {"model": ErrorResponse, "description": "Case not found"},
+        },
+)
+async def calculate_risk_category(case_id: str):
+    """
+    Categorize risk level for a transaction based on predefined criteria.
+    
+    Args:
+        request: Risk score request with case_id.
+    """
+
+    # Check if case exists
+    if case_id not in CASES_DB:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Case with ID {case_id} not found",
+        )
+    
+    case = CASES_DB[case_id]
+    if watsonx_service.is_available():
+        try:
+            # Generate risk category using watsonx.ai
+            result = watsonx_service.generate_risk_category(
+                customer_name=case["customer_name"],
+                amount=case["amount"],
+                country=case["country"],
+                transaction_type="wire transfer",
+            )
+            
+            response = RiskCategoryResponse(
+                case_id=case_id,
+                risk_category=result["risk_category"],
+                reasoning=result["reasoning"],
+                model_used=watsonx_service.MODEL_ID,
+                tokens_consumed=result["tokens_consumed"],
+                generation_time_ms=result["generation_time_ms"],
+                created_at=datetime.now(),
+            )
+            
+            # Store risk category for future retrieval
+            RISK_CATEGORIES_DB[case_id] = response
+            
+            # Check if budget is getting low
+            # token_status = watsonx_service.get_token_status()
+            #if token_status["percentage_used"] >= 90:
+            #   print(f"⚠️  WARNING: {token_status['percentage_used']:.1f}% of token budget used!")
+            
+            return response
+            
+        except Exception as e:
+            error_msg = str(e)
+            if "budget exceeded" in error_msg.lower():
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail="Token budget exceeded. Cannot generate more AI responses.",
+                )
+            else:
+                print(f"⚠️  watsonx.ai error: {error_msg}")
+                print("   Falling back to mock risk categorization")
+    
+    return RiskCategoryResponse(
+            case_id=case_id,
+            risk_category="general-risk",
+            reasoning="Mock risk categorization due to watsonx.ai unavailability.",
+            model_used="mock-rule-based",
+            tokens_consumed=0,
+            generation_time_ms=10,
+            created_at=datetime.now(),)
 
 @app.post(
     "/calculate-risk",

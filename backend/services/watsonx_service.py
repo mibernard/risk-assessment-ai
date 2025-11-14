@@ -268,6 +268,81 @@ class WatsonXService:
             print(f"✗ Risk score generation failed: {e}")
             raise Exception(f"AI risk scoring failed: {str(e)}")
 
+    def generate_risk_category(
+        self,
+        customer_name: str,
+        amount: float,
+        country: str,
+        transaction_type: str = "wire transfer",
+    ) -> Dict[str, Any]:
+        """
+        Categorize risk type for a transaction using watsonx.ai
+
+        Args:
+            customer_name: Customer name
+            amount: Transaction amount in USD
+            country: Country code
+            transaction_type: Type of transaction
+
+        Returns:
+            Dictionary with:
+            - risk_category: Categorized risk type (e.g., Fraud, AML, Sanctions)
+            - tokens_consumed: Number of tokens used
+            - generation_time_ms: Generation time in milliseconds
+
+        Raises:
+            Exception: If watsonx.ai is unavailable or request fails
+        """
+        if not self.is_available():
+            raise Exception("watsonx.ai service is not available")
+        
+        # Check budget
+        if not self.token_tracker.is_within_budget(estimated_tokens=300):
+            raise Exception("Token budget exceeded")
+
+        # Build prompt
+        prompt = self.prompt_builder.build_risk_category_prompt(
+            custoner_name=customer_name,
+            amount=amount,
+            country=country,
+            transaction_type=transaction_type,
+        )
+
+        start_time = time.time()
+        try:
+            response = self._model.generate_text(prompt=prompt)
+            
+            generation_time_ms = int((time.time() - start_time) * 1000)
+            
+            # Parse the response
+            risk_category, reasoning = self.parse_risk_category(response)
+            
+            # Estimate tokens
+            tokens_consumed = len(prompt + response) // 4
+            
+            # Track usage
+            self.token_tracker.track_request(
+                tokens_used=tokens_consumed,
+                model=self.MODEL_ID,
+                endpoint="/calculate-risk",
+                metadata={
+                    "customer_name": customer_name,
+                    "amount": amount,
+                    "country": country,
+                },
+            )
+            
+            return {
+                "risk_category": risk_category,
+                "reasoning": reasoning,
+                "tokens_consumed": tokens_consumed,
+                "generation_time_ms": generation_time_ms,
+            }
+            
+        except Exception as e:
+            print(f"✗ Risk score generation failed: {e}")
+            raise Exception(f"AI risk scoring failed: {str(e)}")
+
     def generate_report_summary(
         self,
         total_cases: int,
@@ -347,6 +422,23 @@ class WatsonXService:
         except Exception as e:
             print(f"✗ watsonx.ai generation failed: {e}")
             raise Exception(f"AI generation failed: {str(e)}")
+    
+    def parse_risk_category(self, text: str) -> tuple[str, str]:
+        """
+        Parse risk category response from AI
+        
+        Args:
+            text: Raw AI response
+        """
+        
+        import re
+        # Extract risk category
+        category_match = re.search(r'RISK_CATEGORY:\s*(.+?)(?=REASONING:|$)', text, re.IGNORECASE | re.DOTALL)
+        risk_category = category_match.group(1).strip() if category_match else "Uncategorized"
+        # Extract reasoning
+        reasoning_match = re.search(r'REASONING:\s*(.+)', text, re.IGNORECASE | re.DOTALL)
+        reasoning = reasoning_match.group(1).strip() if reasoning_match else "No reasoning provided."
+        return risk_category, reasoning
 
     def _parse_risk_score(self, text: str) -> tuple[float, str, str]:
         """

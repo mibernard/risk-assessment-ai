@@ -72,6 +72,32 @@ class ExplanationResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class RiskCategoryRequest(BaseModel):
+    """Schema for requesting risk category."""
+    case_id: str = Field(..., description="UUID of the case to categorize")
+    
+    @field_validator("case_id")
+    @classmethod
+    def validate_uuid(cls, v: str) -> str:
+        try:
+            UUID(v)
+        except ValueError:
+            raise ValueError("case_id must be a valid UUID")
+        return v
+
+class RiskCategoryResponse(BaseModel):
+    """Schema for AI risk category response."""
+    case_id: str
+    risk_category: str = Field(..., description="AI-determined risk category")
+    reasoning: str = Field(..., description="Explanation of the risk category")
+    model_used: str = Field(..., description="Model identifier")
+    tokens_consumed: int = Field(..., ge=0, description="Tokens used")
+    generation_time_ms: int = Field(..., ge=0, description="Generation latency in ms")
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
 
 class RiskScoreRequest(BaseModel):
     """Schema for AI risk score calculation request."""

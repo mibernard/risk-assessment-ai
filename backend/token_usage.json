@@ -1,7 +1,7 @@
 {
-  "total_tokens": 10081,
-  "total_requests": 30,
-  "total_cost_usd": 0.0010080999999999998,
+  "total_tokens": 12675,
+  "total_requests": 42,
+  "total_cost_usd": 0.0012674999999999993,
   "requests": [
     {
       "timestamp": "2025-11-12T17:56:03.038703",
@@ -358,6 +358,150 @@
         "customer": "Maria Gonzalez",
         "amount": 450.0,
         "risk_score": 0.13
+      }
+    },
+    {
+      "timestamp": "2025-11-13T23:24:30.761803",
+      "tokens": 217,
+      "cost_usd": 2.1700000000000002e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/calculate-risk",
+      "metadata": {
+        "customer_name": "Robert Chen",
+        "amount": 12000.0,
+        "country": "US"
+      }
+    },
+    {
+      "timestamp": "2025-11-13T23:25:25.806461",
+      "tokens": 217,
+      "cost_usd": 2.1700000000000002e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/calculate-risk",
+      "metadata": {
+        "customer_name": "Robert Chen",
+        "amount": 12000.0,
+        "country": "US"
+      }
+    },
+    {
+      "timestamp": "2025-11-13T23:27:48.245580",
+      "tokens": 217,
+      "cost_usd": 2.1700000000000002e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/calculate-risk",
+      "metadata": {
+        "customer_name": "Robert Chen",
+        "amount": 12000.0,
+        "country": "US"
+      }
+    },
+    {
+      "timestamp": "2025-11-13T23:27:57.709953",
+      "tokens": 217,
+      "cost_usd": 2.1700000000000002e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/calculate-risk",
+      "metadata": {
+        "customer_name": "Robert Chen",
+        "amount": 12000.0,
+        "country": "US"
+      }
+    },
+    {
+      "timestamp": "2025-11-13T23:29:03.144760",
+      "tokens": 217,
+      "cost_usd": 2.1700000000000002e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/calculate-risk",
+      "metadata": {
+        "customer_name": "Robert Chen",
+        "amount": 12000.0,
+        "country": "US"
+      }
+    },
+    {
+      "timestamp": "2025-11-13T23:30:18.813753",
+      "tokens": 217,
+      "cost_usd": 2.1700000000000002e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/calculate-risk",
+      "metadata": {
+        "customer_name": "Robert Chen",
+        "amount": 12000.0,
+        "country": "US"
+      }
+    },
+    {
+      "timestamp": "2025-11-13T23:33:19.793557",
+      "tokens": 217,
+      "cost_usd": 2.1700000000000002e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/calculate-risk",
+      "metadata": {
+        "customer_name": "Robert Chen",
+        "amount": 12000.0,
+        "country": "US"
+      }
+    },
+    {
+      "timestamp": "2025-11-13T23:36:46.653409",
+      "tokens": 217,
+      "cost_usd": 2.1700000000000002e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/calculate-risk",
+      "metadata": {
+        "customer_name": "Robert Chen",
+        "amount": 12000.0,
+        "country": "US"
+      }
+    },
+    {
+      "timestamp": "2025-11-13T23:39:07.265114",
+      "tokens": 217,
+      "cost_usd": 2.1700000000000002e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/calculate-risk",
+      "metadata": {
+        "customer_name": "Robert Chen",
+        "amount": 12000.0,
+        "country": "US"
+      }
+    },
+    {
+      "timestamp": "2025-11-13T23:41:13.064718",
+      "tokens": 226,
+      "cost_usd": 2.26e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/calculate-risk",
+      "metadata": {
+        "customer_name": "Sarah Williams",
+        "amount": 7500.0,
+        "country": "GB"
+      }
+    },
+    {
+      "timestamp": "2025-11-13T23:43:17.828020",
+      "tokens": 226,
+      "cost_usd": 2.26e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/calculate-risk",
+      "metadata": {
+        "customer_name": "Sarah Williams",
+        "amount": 7500.0,
+        "country": "GB"
+      }
+    },
+    {
+      "timestamp": "2025-11-13T23:44:10.139561",
+      "tokens": 189,
+      "cost_usd": 1.8900000000000002e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/calculate-risk",
+      "metadata": {
+        "customer_name": "Alice Johnson",
+        "amount": 5300.0,
+        "country": "SG"
       }
     }
   ],

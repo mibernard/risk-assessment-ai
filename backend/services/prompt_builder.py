@@ -69,6 +69,37 @@ Keep your response concise (2-3 sentences per section)."""
 
         return user_prompt
 
+    def build_risk_category_prompt(
+        self,
+        custoner_name: str,
+        amount: float,
+        country: str,
+        transaction_type: str = "wire transfer",
+    ) -> str:
+        """
+        Build a prompt for AI-powered risk category classification
+        
+        Args:
+            custoner_name: Customer name
+            amount: Transaction amount in USD
+            country: Country code (e.g., "USA", "SG")
+            transaction_type: Type of transaction
+        """
+        prompt = f"""Classify the risk category of this banking transaction:
+        Customer: {custoner_name}
+        Transaction Amount: ${amount:,.2f} USD
+        Country: {country}
+        Transaction Type: {transaction_type}
+        Possible risk categories:
+        1. Fraud
+        2. Money Laundering
+        3. Sanctions Violation
+        Provide your response in EXACTLY this format:
+        RISK_CATEGORY: [Fraud/Money Laundering/Sanctions Violation/None]
+        REASONING: [2-3 sentence explanation of key risk factors]
+        """
+        return prompt
+
     def build_risk_scoring_prompt(
         self,
         customer_name: str,
