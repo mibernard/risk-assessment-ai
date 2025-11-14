@@ -188,6 +188,86 @@ class WatsonXService:
             print(f"✗ watsonx.ai generation failed: {e}")
             raise Exception(f"AI generation failed: {str(e)}")
 
+    def generate_risk_score(
+        self,
+        customer_name: str,
+        amount: float,
+        country: str,
+        transaction_type: str = "wire transfer",
+    ) -> Dict[str, Any]:
+        """
+        Generate AI-powered risk score for a transaction
+        
+        Args:
+            customer_name: Customer name
+            amount: Transaction amount in USD
+            country: Country code
+            transaction_type: Type of transaction
+            
+        Returns:
+            Dictionary with:
+            - risk_score: Calculated risk score (0.0-1.0)
+            - reasoning: Explanation of the score
+            - risk_level: LOW/MEDIUM/HIGH
+            - tokens_consumed: Number of tokens used
+            - generation_time_ms: Generation time in milliseconds
+            
+        Raises:
+            Exception: If watsonx.ai is unavailable or request fails
+        """
+        if not self.is_available():
+            raise Exception("watsonx.ai service is not available")
+        
+        # Check budget
+        if not self.token_tracker.is_within_budget(estimated_tokens=300):
+            raise Exception("Token budget exceeded")
+        
+        # Build prompt
+        prompt = self.prompt_builder.build_risk_scoring_prompt(
+            customer_name=customer_name,
+            amount=amount,
+            country=country,
+            transaction_type=transaction_type,
+        )
+        
+        # Generate response
+        start_time = time.time()
+        
+        try:
+            response = self._model.generate_text(prompt=prompt)
+            
+            generation_time_ms = int((time.time() - start_time) * 1000)
+            
+            # Parse the response
+            risk_score, reasoning, risk_level = self._parse_risk_score(response)
+            
+            # Estimate tokens
+            tokens_consumed = len(prompt + response) // 4
+            
+            # Track usage
+            self.token_tracker.track_request(
+                tokens_used=tokens_consumed,
+                model=self.MODEL_ID,
+                endpoint="/calculate-risk",
+                metadata={
+                    "customer_name": customer_name,
+                    "amount": amount,
+                    "country": country,
+                },
+            )
+            
+            return {
+                "risk_score": risk_score,
+                "reasoning": reasoning,
+                "risk_level": risk_level,
+                "tokens_consumed": tokens_consumed,
+                "generation_time_ms": generation_time_ms,
+            }
+            
+        except Exception as e:
+            print(f"✗ Risk score generation failed: {e}")
+            raise Exception(f"AI risk scoring failed: {str(e)}")
+
     def generate_report_summary(
         self,
         total_cases: int,
@@ -267,6 +347,44 @@ class WatsonXService:
         except Exception as e:
             print(f"✗ watsonx.ai generation failed: {e}")
             raise Exception(f"AI generation failed: {str(e)}")
+
+    def _parse_risk_score(self, text: str) -> tuple[float, str, str]:
+        """
+        Parse risk score response from AI
+        
+        Args:
+            text: Raw AI response
+            
+        Returns:
+            (risk_score, reasoning, risk_level) tuple
+        """
+        import re
+        
+        # Extract risk score
+        score_match = re.search(r'RISK_SCORE:\s*(0?\.\d+|1\.0|0|1)', text, re.IGNORECASE)
+        risk_score = float(score_match.group(1)) if score_match else 0.5
+        
+        # Ensure risk score is between 0 and 1
+        risk_score = max(0.0, min(1.0, risk_score))
+        
+        # Extract reasoning
+        reasoning_match = re.search(r'REASONING:\s*(.+?)(?=RISK_LEVEL:|$)', text, re.IGNORECASE | re.DOTALL)
+        reasoning = reasoning_match.group(1).strip() if reasoning_match else "Risk assessment completed."
+        
+        # Extract risk level
+        level_match = re.search(r'RISK_LEVEL:\s*(LOW|MEDIUM|HIGH)', text, re.IGNORECASE)
+        risk_level = level_match.group(1).upper() if level_match else self._calculate_risk_level(risk_score)
+        
+        return risk_score, reasoning, risk_level
+    
+    def _calculate_risk_level(self, risk_score: float) -> str:
+        """Calculate risk level from score"""
+        if risk_score >= 0.7:
+            return "HIGH"
+        elif risk_score >= 0.4:
+            return "MEDIUM"
+        else:
+            return "LOW"
 
     def _parse_explanation(self, text: str) -> tuple[str, str]:
         """

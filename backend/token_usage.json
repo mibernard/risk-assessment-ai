@@ -1,7 +1,7 @@
 {
-  "total_tokens": 1553,
-  "total_requests": 6,
-  "total_cost_usd": 0.0001553,
+  "total_tokens": 10081,
+  "total_requests": 30,
+  "total_cost_usd": 0.0010080999999999998,
   "requests": [
     {
       "timestamp": "2025-11-12T17:56:03.038703",
@@ -70,6 +70,294 @@
       "metadata": {
         "total_cases": 7,
         "high_risk_count": 4
+      }
+    },
+    {
+      "timestamp": "2025-11-13T20:52:08.634750",
+      "tokens": 277,
+      "cost_usd": 2.7700000000000002e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/explain",
+      "metadata": {
+        "customer": "Alice Johnson",
+        "amount": 5300.0,
+        "risk_score": 0.82
+      }
+    },
+    {
+      "timestamp": "2025-11-13T20:54:45.229016",
+      "tokens": 277,
+      "cost_usd": 2.7700000000000002e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/explain",
+      "metadata": {
+        "customer": "Alice Johnson",
+        "amount": 5300.0,
+        "risk_score": 0.82
+      }
+    },
+    {
+      "timestamp": "2025-11-13T20:54:54.871114",
+      "tokens": 277,
+      "cost_usd": 2.7700000000000002e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/explain",
+      "metadata": {
+        "customer": "Alice Johnson",
+        "amount": 5300.0,
+        "risk_score": 0.82
+      }
+    },
+    {
+      "timestamp": "2025-11-13T20:55:29.742910",
+      "tokens": 277,
+      "cost_usd": 2.7700000000000002e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/explain",
+      "metadata": {
+        "customer": "Alice Johnson",
+        "amount": 5300.0,
+        "risk_score": 0.82
+      }
+    },
+    {
+      "timestamp": "2025-11-13T20:55:34.351840",
+      "tokens": 277,
+      "cost_usd": 2.7700000000000002e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/explain",
+      "metadata": {
+        "customer": "Alice Johnson",
+        "amount": 5300.0,
+        "risk_score": 0.82
+      }
+    },
+    {
+      "timestamp": "2025-11-13T20:56:10.268717",
+      "tokens": 423,
+      "cost_usd": 4.23e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/explain",
+      "metadata": {
+        "customer": "Robert Chen",
+        "amount": 12000.0,
+        "risk_score": 0.54
+      }
+    },
+    {
+      "timestamp": "2025-11-13T20:56:24.629542",
+      "tokens": 317,
+      "cost_usd": 3.1700000000000005e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/explain",
+      "metadata": {
+        "customer": "Robert Chen",
+        "amount": 12000.0,
+        "risk_score": 0.54
+      }
+    },
+    {
+      "timestamp": "2025-11-13T21:29:11.591952",
+      "tokens": 456,
+      "cost_usd": 4.5600000000000004e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/calculate-risk",
+      "metadata": {
+        "customer_name": "Alice Johnson",
+        "amount": 5300.0,
+        "country": "SG"
+      }
+    },
+    {
+      "timestamp": "2025-11-13T21:29:48.656303",
+      "tokens": 456,
+      "cost_usd": 4.5600000000000004e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/calculate-risk",
+      "metadata": {
+        "customer_name": "Alice Johnson",
+        "amount": 5300.0,
+        "country": "SG"
+      }
+    },
+    {
+      "timestamp": "2025-11-13T21:30:31.648327",
+      "tokens": 384,
+      "cost_usd": 3.8400000000000005e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/calculate-risk",
+      "metadata": {
+        "customer_name": "Robert Chen",
+        "amount": 12000.0,
+        "country": "US"
+      }
+    },
+    {
+      "timestamp": "2025-11-13T21:31:16.757659",
+      "tokens": 438,
+      "cost_usd": 4.38e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/explain",
+      "metadata": {
+        "customer": "Alice Johnson",
+        "amount": 5300.0,
+        "risk_score": 0.44
+      }
+    },
+    {
+      "timestamp": "2025-11-13T21:35:13.012076",
+      "tokens": 438,
+      "cost_usd": 4.38e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/explain",
+      "metadata": {
+        "customer": "Alice Johnson",
+        "amount": 5300.0,
+        "risk_score": 0.44
+      }
+    },
+    {
+      "timestamp": "2025-11-13T21:35:37.181702",
+      "tokens": 438,
+      "cost_usd": 4.38e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/explain",
+      "metadata": {
+        "customer": "Alice Johnson",
+        "amount": 5300.0,
+        "risk_score": 0.44
+      }
+    },
+    {
+      "timestamp": "2025-11-13T21:36:56.843158",
+      "tokens": 438,
+      "cost_usd": 4.38e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/explain",
+      "metadata": {
+        "customer": "Alice Johnson",
+        "amount": 5300.0,
+        "risk_score": 0.44
+      }
+    },
+    {
+      "timestamp": "2025-11-13T21:37:22.012563",
+      "tokens": 438,
+      "cost_usd": 4.38e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/explain",
+      "metadata": {
+        "customer": "Alice Johnson",
+        "amount": 5300.0,
+        "risk_score": 0.44
+      }
+    },
+    {
+      "timestamp": "2025-11-13T21:38:00.388025",
+      "tokens": 300,
+      "cost_usd": 3e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/explain",
+      "metadata": {
+        "customer": "Maria Gonzalez",
+        "amount": 450.0,
+        "risk_score": 0.18
+      }
+    },
+    {
+      "timestamp": "2025-11-13T21:38:13.074727",
+      "tokens": 300,
+      "cost_usd": 3e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/explain",
+      "metadata": {
+        "customer": "Maria Gonzalez",
+        "amount": 450.0,
+        "risk_score": 0.18
+      }
+    },
+    {
+      "timestamp": "2025-11-13T21:49:22.385183",
+      "tokens": 277,
+      "cost_usd": 2.7700000000000002e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/explain",
+      "metadata": {
+        "customer": "Alice Johnson",
+        "amount": 5300.0,
+        "risk_score": 0.82
+      }
+    },
+    {
+      "timestamp": "2025-11-13T21:49:37.013475",
+      "tokens": 273,
+      "cost_usd": 2.7300000000000003e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/explain",
+      "metadata": {
+        "customer": "John Smith",
+        "amount": 9800.0,
+        "risk_score": 0.94
+      }
+    },
+    {
+      "timestamp": "2025-11-13T21:55:12.271871",
+      "tokens": 277,
+      "cost_usd": 2.7700000000000002e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/explain",
+      "metadata": {
+        "customer": "Alice Johnson",
+        "amount": 5300.0,
+        "risk_score": 0.82
+      }
+    },
+    {
+      "timestamp": "2025-11-13T21:58:15.040489",
+      "tokens": 456,
+      "cost_usd": 4.5600000000000004e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/calculate-risk",
+      "metadata": {
+        "customer_name": "Alice Johnson",
+        "amount": 5300.0,
+        "country": "SG"
+      }
+    },
+    {
+      "timestamp": "2025-11-13T21:58:32.625635",
+      "tokens": 384,
+      "cost_usd": 3.8400000000000005e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/calculate-risk",
+      "metadata": {
+        "customer_name": "Robert Chen",
+        "amount": 12000.0,
+        "country": "US"
+      }
+    },
+    {
+      "timestamp": "2025-11-13T21:58:47.315447",
+      "tokens": 350,
+      "cost_usd": 3.5e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/calculate-risk",
+      "metadata": {
+        "customer_name": "Maria Gonzalez",
+        "amount": 450.0,
+        "country": "US"
+      }
+    },
+    {
+      "timestamp": "2025-11-13T21:59:17.935192",
+      "tokens": 300,
+      "cost_usd": 3e-05,
+      "model": "ibm/granite-3-2-8b-instruct",
+      "endpoint": "/explain",
+      "metadata": {
+        "customer": "Maria Gonzalez",
+        "amount": 450.0,
+        "risk_score": 0.13
       }
     }
   ],

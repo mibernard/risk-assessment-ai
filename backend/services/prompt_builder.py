@@ -69,6 +69,50 @@ Keep your response concise (2-3 sentences per section)."""
 
         return user_prompt
 
+    def build_risk_scoring_prompt(
+        self,
+        customer_name: str,
+        amount: float,
+        country: str,
+        transaction_type: str = "wire transfer",
+    ) -> str:
+        """
+        Build a prompt for AI-powered risk score calculation
+        
+        Args:
+            customer_name: Customer name
+            amount: Transaction amount in USD
+            country: Country code (e.g., "USA", "SG")
+            transaction_type: Type of transaction
+            
+        Returns:
+            Formatted prompt for risk score generation
+        """
+        user_prompt = f"""Analyze this banking transaction and calculate a risk score:
+
+Customer: {customer_name}
+Transaction Amount: ${amount:,.2f} USD
+Country: {country}
+Transaction Type: {transaction_type}
+
+Calculate a risk score between 0.0 (no risk) and 1.0 (very high risk) based on:
+1. Transaction amount (large amounts = higher risk)
+2. Country risk profile (high-risk jurisdictions)
+3. Typical patterns for this transaction type
+4. AML/fraud indicators
+
+Provide your response in EXACTLY this format:
+RISK_SCORE: [number between 0.0 and 1.0]
+REASONING: [2-3 sentence explanation of key risk factors]
+RISK_LEVEL: [LOW/MEDIUM/HIGH]
+
+Example:
+RISK_SCORE: 0.75
+REASONING: Large transaction amount ($50,000) to a high-risk jurisdiction raises AML concerns. The country has known issues with financial crime. Additional due diligence is recommended.
+RISK_LEVEL: HIGH"""
+
+        return user_prompt
+
     def build_report_summary_prompt(
         self,
         total_cases: int,

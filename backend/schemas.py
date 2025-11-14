@@ -73,6 +73,35 @@ class ExplanationResponse(BaseModel):
         from_attributes = True
 
 
+class RiskScoreRequest(BaseModel):
+    """Schema for AI risk score calculation request."""
+    case_id: str = Field(..., description="UUID of the case to score")
+    
+    @field_validator("case_id")
+    @classmethod
+    def validate_uuid(cls, v: str) -> str:
+        try:
+            UUID(v)
+        except ValueError:
+            raise ValueError("case_id must be a valid UUID")
+        return v
+
+
+class RiskScoreResponse(BaseModel):
+    """Schema for AI risk score calculation response."""
+    case_id: str
+    risk_score: float = Field(..., ge=0.0, le=1.0, description="AI-calculated risk score")
+    risk_level: str = Field(..., description="LOW/MEDIUM/HIGH risk level")
+    reasoning: str = Field(..., description="Explanation of the risk score")
+    model_used: str = Field(..., description="Model identifier")
+    tokens_consumed: int = Field(..., ge=0, description="Tokens used")
+    generation_time_ms: int = Field(..., ge=0, description="Generation latency in ms")
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
 class ReportRequest(BaseModel):
     """Schema for report generation request."""
     case_ids: Optional[list[str]] = Field(

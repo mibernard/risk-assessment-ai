@@ -1,6 +1,6 @@
 /**
  * API Client for Risk Assessment Backend
- * 
+ *
  * Provides typed functions for all API endpoints.
  * See docs/API_CONTRACT.md for full specifications.
  */
@@ -29,6 +29,17 @@ export interface Explanation {
   confidence: number;
   rationale: string;
   recommended_action: string;
+  model_used: string;
+  tokens_consumed: number;
+  generation_time_ms: number;
+  created_at: string;
+}
+
+export interface RiskScore {
+  case_id: string;
+  risk_score: number;
+  risk_level: "LOW" | "MEDIUM" | "HIGH";
+  reasoning: string;
   model_used: string;
   tokens_consumed: number;
   generation_time_ms: number;
@@ -116,6 +127,32 @@ export async function getCase(id: string): Promise<Case> {
 }
 
 /**
+ * Fetch stored explanation for a case
+ * GET /cases/{id}/explanation
+ */
+export async function getExplanation(
+  caseId: string
+): Promise<Explanation | null> {
+  const response = await fetch(`${API_URL}/cases/${caseId}/explanation`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (response.status === 404) {
+    // No explanation generated yet
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch explanation: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/**
  * Generate AI explanation for a case
  * POST /explain
  */
@@ -139,6 +176,59 @@ export async function explainCase(caseId: string): Promise<Explanation> {
       throw new Error("AI service unavailable");
     }
     throw new Error(`Failed to generate explanation: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Fetch stored risk score for a case
+ * GET /cases/{id}/risk-score
+ */
+export async function getRiskScore(caseId: string): Promise<RiskScore | null> {
+  const response = await fetch(`${API_URL}/cases/${caseId}/risk-score`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (response.status === 404) {
+    // No risk score calculated yet
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch risk score: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Calculate AI risk score for a case
+ * POST /calculate-risk
+ */
+export async function calculateRiskScore(caseId: string): Promise<RiskScore> {
+  const response = await fetch(`${API_URL}/calculate-risk`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ case_id: caseId }),
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error("Case not found");
+    }
+    if (response.status === 429) {
+      throw new Error("Token budget exceeded");
+    }
+    if (response.status === 503) {
+      throw new Error("AI service unavailable");
+    }
+    throw new Error(`Failed to calculate risk score: ${response.statusText}`);
   }
 
   return response.json();
@@ -280,4 +370,3 @@ export function getStatusColor(status: Case["status"]): {
       return { color: "bg-gray-100", textColor: "text-gray-700" };
   }
 }
-

@@ -17,6 +17,8 @@ from schemas import (
     CaseResponse,
     ExplanationRequest,
     ExplanationResponse,
+    RiskScoreRequest,
+    RiskScoreResponse,
     HealthResponse,
     ReportRequest,
     ReportResponse,
@@ -75,9 +77,7 @@ CASES_DB = {
         "risk_score": 0.54,
         "status": "reviewing",
         "created_at": datetime.now() - timedelta(hours=5),
-        "explanation_generated": True,
-        "model_version": "granite-3-2-8b-instruct",
-        "tokens_used": 287,
+        "explanation_generated": False,
     },
     "770e8400-e29b-41d4-a716-446655440002": {
         "id": "770e8400-e29b-41d4-a716-446655440002",
@@ -87,9 +87,7 @@ CASES_DB = {
         "risk_score": 0.18,
         "status": "resolved",
         "created_at": datetime.now() - timedelta(days=1),
-        "explanation_generated": True,
-        "model_version": "granite-3-2-8b-instruct",
-        "tokens_used": 245,
+        "explanation_generated": False,
     },
     "880e8400-e29b-41d4-a716-446655440003": {
         "id": "880e8400-e29b-41d4-a716-446655440003",
@@ -109,9 +107,7 @@ CASES_DB = {
         "risk_score": 0.65,
         "status": "reviewing",
         "created_at": datetime.now() - timedelta(hours=8),
-        "explanation_generated": True,
-        "model_version": "granite-3-2-8b-instruct",
-        "tokens_used": 312,
+        "explanation_generated": False,
     },
     "aa0e8400-e29b-41d4-a716-446655440005": {
         "id": "aa0e8400-e29b-41d4-a716-446655440005",
@@ -131,9 +127,7 @@ CASES_DB = {
         "risk_score": 0.71,
         "status": "reviewing",
         "created_at": datetime.now() - timedelta(hours=6),
-        "explanation_generated": True,
-        "model_version": "granite-3-2-8b-instruct",
-        "tokens_used": 356,
+        "explanation_generated": False,
     },
     "cc0e8400-e29b-41d4-a716-446655440007": {
         "id": "cc0e8400-e29b-41d4-a716-446655440007",
@@ -143,9 +137,7 @@ CASES_DB = {
         "risk_score": 0.23,
         "status": "resolved",
         "created_at": datetime.now() - timedelta(days=2),
-        "explanation_generated": True,
-        "model_version": "granite-3-2-8b-instruct",
-        "tokens_used": 198,
+        "explanation_generated": False,
     },
     "dd0e8400-e29b-41d4-a716-446655440008": {
         "id": "dd0e8400-e29b-41d4-a716-446655440008",
@@ -165,11 +157,15 @@ CASES_DB = {
         "risk_score": 0.31,
         "status": "resolved",
         "created_at": datetime.now() - timedelta(days=3),
-        "explanation_generated": True,
-        "model_version": "granite-3-2-8b-instruct",
-        "tokens_used": 223,
+        "explanation_generated": False,
     },
 }
+
+# Store explanations separately (keyed by case_id)
+EXPLANATIONS_DB = {}
+
+# Store risk scores separately (keyed by case_id)
+RISK_SCORES_DB = {}
 
 # ===================================
 # API Routes
@@ -334,6 +330,9 @@ async def explain_case(request: ExplanationRequest):
             CASES_DB[request.case_id]["model_version"] = watsonx_service.MODEL_ID
             CASES_DB[request.case_id]["tokens_used"] = result["tokens_consumed"]
             
+            # Store explanation for future retrieval
+            EXPLANATIONS_DB[request.case_id] = explanation
+            
             # Check for budget warnings
             has_warning, warning_msg = watsonx_service.check_budget_status()
             if has_warning:
@@ -411,7 +410,205 @@ async def explain_case(request: ExplanationRequest):
     CASES_DB[request.case_id]["explanation_generated"] = True
     CASES_DB[request.case_id]["model_version"] = "mock-granite-13b-instruct-v2"
     
+    # Store explanation for future retrieval
+    EXPLANATIONS_DB[request.case_id] = explanation
+    
     return explanation
+
+
+@app.get(
+    "/cases/{case_id}/explanation",
+    response_model=ExplanationResponse,
+    tags=["AI"],
+    summary="Get stored explanation",
+    description="Retrieve previously generated AI explanation for a case.",
+    responses={
+        404: {"model": ErrorResponse, "description": "Explanation not found"},
+    },
+)
+async def get_explanation(case_id: str):
+    """
+    Get the stored AI explanation for a case.
+    
+    Args:
+        case_id: UUID of the case.
+        
+    Returns:
+        Previously generated explanation.
+        
+    Raises:
+        HTTPException: 404 if explanation not found.
+    """
+    if case_id not in EXPLANATIONS_DB:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No explanation found for case {case_id}",
+        )
+    
+    return EXPLANATIONS_DB[case_id]
+
+
+@app.get(
+    "/cases/{case_id}/risk-score",
+    response_model=RiskScoreResponse,
+    tags=["AI"],
+    summary="Get stored risk score",
+    description="Retrieve previously calculated AI risk score for a case.",
+    responses={
+        404: {"model": ErrorResponse, "description": "Risk score not found"},
+    },
+)
+async def get_risk_score(case_id: str):
+    """
+    Get the stored AI risk score for a case.
+    
+    Args:
+        case_id: UUID of the case.
+        
+    Returns:
+        Previously calculated risk score.
+        
+    Raises:
+        HTTPException: 404 if risk score not found.
+    """
+    if case_id not in RISK_SCORES_DB:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No risk score found for case {case_id}",
+        )
+    
+    return RISK_SCORES_DB[case_id]
+
+
+@app.post(
+    "/calculate-risk",
+    response_model=RiskScoreResponse,
+    tags=["AI"],
+    summary="Calculate AI risk score",
+    description="Use watsonx.ai to calculate a dynamic risk score for a transaction.",
+    responses={
+        404: {"model": ErrorResponse, "description": "Case not found"},
+        503: {"model": ErrorResponse, "description": "AI service unavailable"},
+        429: {"model": ErrorResponse, "description": "Token budget exceeded"},
+    },
+)
+async def calculate_risk_score(request: RiskScoreRequest):
+    """
+    Calculate AI-powered risk score for a transaction using watsonx.ai.
+    
+    Uses IBM Granite model to analyze transaction data and generate a risk score
+    between 0.0 (no risk) and 1.0 (very high risk) based on:
+    - Transaction amount
+    - Country risk profile
+    - Transaction patterns
+    - AML/fraud indicators
+    
+    Args:
+        request: Risk score request with case_id.
+        
+    Returns:
+        AI-generated risk score with reasoning and risk level.
+        
+    Raises:
+        HTTPException: 404 if case not found, 503 if AI unavailable, 429 if budget exceeded.
+    """
+    # Check if case exists
+    if request.case_id not in CASES_DB:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Case with ID {request.case_id} not found",
+        )
+    
+    case = CASES_DB[request.case_id]
+    
+    # Try to use real watsonx.ai
+    if watsonx_service.is_available():
+        try:
+            # Generate risk score using watsonx.ai
+            result = watsonx_service.generate_risk_score(
+                customer_name=case["customer_name"],
+                amount=case["amount"],
+                country=case["country"],
+            )
+            
+            response = RiskScoreResponse(
+                case_id=request.case_id,
+                risk_score=result["risk_score"],
+                risk_level=result["risk_level"],
+                reasoning=result["reasoning"],
+                model_used=watsonx_service.MODEL_ID,
+                tokens_consumed=result["tokens_consumed"],
+                generation_time_ms=result["generation_time_ms"],
+                created_at=datetime.now(),
+            )
+            
+            # Update case with new AI-calculated risk score
+            CASES_DB[request.case_id]["risk_score"] = result["risk_score"]
+            CASES_DB[request.case_id]["model_version"] = watsonx_service.MODEL_ID
+            
+            # Store risk score for future retrieval
+            RISK_SCORES_DB[request.case_id] = response
+            
+            # Check if budget is getting low
+            token_status = watsonx_service.get_token_status()
+            if token_status["percentage_used"] >= 90:
+                print(f"⚠️  WARNING: {token_status['percentage_used']:.1f}% of token budget used!")
+            
+            return response
+            
+        except Exception as e:
+            error_msg = str(e)
+            if "budget exceeded" in error_msg.lower():
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail="Token budget exceeded. Cannot generate more AI responses.",
+                )
+            else:
+                print(f"⚠️  watsonx.ai error: {error_msg}")
+                print("   Falling back to mock risk scoring")
+    
+    # Fallback: Simple rule-based risk scoring
+    # Calculate based on amount and country
+    amount_risk = min(1.0, case["amount"] / 20000)  # $20k+ = high risk
+    
+    # Simple country risk mapping
+    high_risk_countries = {"SG", "CN", "RU", "IR"}
+    country_risk = 0.7 if case["country"] in high_risk_countries else 0.3
+    
+    # Weighted average
+    calculated_score = (amount_risk * 0.6) + (country_risk * 0.4)
+    calculated_score = round(calculated_score, 2)
+    
+    # Determine risk level
+    if calculated_score >= 0.7:
+        risk_level = "HIGH"
+        reasoning = f"High risk due to large transaction amount (${case['amount']:,.2f}) and high-risk jurisdiction ({case['country']})."
+    elif calculated_score >= 0.4:
+        risk_level = "MEDIUM"
+        reasoning = f"Moderate risk. Transaction amount (${case['amount']:,.2f}) from {case['country']} requires standard review."
+    else:
+        risk_level = "LOW"
+        reasoning = f"Low risk. Transaction amount (${case['amount']:,.2f}) from {case['country']} is within normal parameters."
+    
+    # Mock response
+    response = RiskScoreResponse(
+        case_id=request.case_id,
+        risk_score=calculated_score,
+        risk_level=risk_level,
+        reasoning=reasoning,
+        model_used="mock-rule-based",
+        tokens_consumed=0,
+        generation_time_ms=10,
+        created_at=datetime.now(),
+    )
+    
+    # Update case with calculated risk score
+    CASES_DB[request.case_id]["risk_score"] = calculated_score
+    
+    # Store risk score for future retrieval
+    RISK_SCORES_DB[request.case_id] = response
+    
+    return response
 
 
 @app.post(
