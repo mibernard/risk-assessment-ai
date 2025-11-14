@@ -2,7 +2,7 @@
 
 /**
  * Dashboard Page
- * 
+ *
  * Displays all flagged banking transactions in a table.
  * Users can click on rows to view case details.
  */
@@ -15,6 +15,17 @@ import { RiskBadge } from "@/components/RiskBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Search, Filter, SortAsc, FileText, X } from "lucide-react";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -39,15 +50,18 @@ export default function DashboardPage() {
     }
   };
 
-  const sortCases = (sort : string) => {
+  const sortCases = (sort: string) => {
     const sortedCases = [...cases];
     if (sort === "amount") {
       sortedCases.sort((a, b) => b.amount - a.amount);
     } else if (sort === "date") {
-      sortedCases.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      sortedCases.sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
     }
     setCases(sortedCases);
-  }
+  };
 
   useEffect(() => {
     fetchCases();
@@ -73,13 +87,25 @@ export default function DashboardPage() {
                 </p>
               </div>
             </div>
-            <div className="mt-4 flex md:mt-0 md:ml-4">
-              <Link
-                href="/report"
-                className="ml-3 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            <div className="mt-4 flex md:mt-0 md:ml-4 gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setQueryName("");
+                  setQueryCountry("");
+                  setRisk("1000");
+                  setStatus("all");
+                }}
               >
-                Generate Report
-              </Link>
+                <X className="h-4 w-4 mr-2" />
+                Clear Filters
+              </Button>
+              <Button asChild>
+                <Link href="/report">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Generate Report
+                </Link>
+              </Button>
             </div>
           </div>
         </div>
@@ -89,9 +115,7 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {loading && <LoadingState message="Loading cases..." rows={5} />}
 
-        {error && (
-          <ErrorState message={error} onRetry={fetchCases} />
-        )}
+        {error && <ErrorState message={error} onRetry={fetchCases} />}
 
         {!loading && !error && cases.length === 0 && (
           <div className="text-center py-12">
@@ -118,112 +142,237 @@ export default function DashboardPage() {
         )}
 
         {!loading && !error && cases.length > 0 && (
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div className="px-4 py-5 sm:px-6 border-b border-gray-200 flex gap-4">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">
-                Flagged Transactions ({cases.length})
-              </h3>
-              <input className="border rounded-md w-50 px-2" placeholder="Search Name" value={queryName} onChange={(e) => setQueryName(e.target.value)}/>
-              <input className="border rounded-md w-50 px-2" placeholder="Search Country" value={queryCountry} onChange={(e) => setQueryCountry(e.target.value)}/>
-              <div className="flex px-2 gap-2">
-                <label>Select Risk:</label>
-                  <select className="border rounded-md px-2" id="riskDropDown" name="riskSelection" onChange={(e) => setRisk(e.target.value)}>
-                    <option value={1000}>All</option>
-                    <option value={0}>Low Risk</option>
-                    <option value={0.4}>Medium Risk</option>
-                    <option value={0.7}>High Risk</option>
-                  </select>
-              </div>
-              <div className="flex px-2 gap-2">
-                <label>Select Status:</label>
-                  <select className="border rounded-md px-2" id="statusDropDown" name="statusSelection" onChange={(e) => setStatus(e.target.value)}>
-                    <option value="all">All</option>
-                    <option value="new">New</option>
-                    <option value="reviewing">Reviewing</option>
-                    <option value="resolved">Resolved</option>
-                  </select>
-              </div>
-              <div className="flex px-2 gap-2">
-                <label>Sort by:</label>
-                  <select className="border rounded-md px-2" id="sortDropDown" name="sortSelection" onChange={(e) => sortCases(e.target.value)}>
-                    <option value="n/a"></option>
-                    <option value="amount">Amount</option>
-                    <option value="date">Date</option>
-                  </select>
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Customer
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Amount
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Country
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Risk Score
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Status
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Created
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  { /* this filtering is absolute cancer but it works */}
-                  {cases.filter((caseItem) => (caseItem.customer_name.toLowerCase().includes(queryName.toString().toLowerCase()) && caseItem.country.toLowerCase().includes(queryCountry.toString().toLowerCase()) && (risk === "0.7" ? caseItem.risk_score >= 0.7 : (risk === "0.4" ? caseItem.risk_score < 0.7 && caseItem.risk_score >= 0.4 : (risk === "0" ? caseItem.risk_score >= 0 && caseItem.risk_score < 0.4 : caseItem.risk_score >= 0))) && (status === "all" ? caseItem.status.includes("") : caseItem.status === status))).map((caseItem) => (
-                    <tr
-                      key={caseItem.id}
-                      onClick={() => handleRowClick(caseItem.id)}
-                      className="hover:bg-gray-50 cursor-pointer transition-colors"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {caseItem.customer_name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatCurrency(caseItem.amount)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {caseItem.country}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <RiskBadge score={caseItem.risk_score} />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <StatusBadge status={caseItem.status} />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDateTime(caseItem.created_at)}
-                      </td>
-                    </tr>
-                  ))}
-                  
-                  {/*}
+          <div className="space-y-4">
+            {/* Filters Card */}
+            <Card>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <Filter className="h-5 w-5" />
+                      Filters & Search
+                    </h3>
+                    <span className="text-sm text-muted-foreground">
+                      {
+                        cases.filter(
+                          (caseItem) =>
+                            caseItem.customer_name
+                              .toLowerCase()
+                              .includes(queryName.toString().toLowerCase()) &&
+                            caseItem.country
+                              .toLowerCase()
+                              .includes(
+                                queryCountry.toString().toLowerCase()
+                              ) &&
+                            (risk === "0.7"
+                              ? caseItem.risk_score >= 0.7
+                              : risk === "0.4"
+                              ? caseItem.risk_score < 0.7 &&
+                                caseItem.risk_score >= 0.4
+                              : risk === "0"
+                              ? caseItem.risk_score >= 0 &&
+                                caseItem.risk_score < 0.4
+                              : caseItem.risk_score >= 0) &&
+                            (status === "all"
+                              ? caseItem.status.includes("")
+                              : caseItem.status === status)
+                        ).length
+                      }{" "}
+                      results
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    {/* Search Name */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                        <Search className="h-4 w-4" />
+                        Customer Name
+                      </label>
+                      <Input
+                        placeholder="Search by name..."
+                        value={queryName}
+                        onChange={(e) => setQueryName(e.target.value)}
+                        className="w-full"
+                      />
+                    </div>
+
+                    {/* Search Country */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                        <Search className="h-4 w-4" />
+                        Country
+                      </label>
+                      <Input
+                        placeholder="Search by country..."
+                        value={queryCountry}
+                        onChange={(e) => setQueryCountry(e.target.value)}
+                        className="w-full"
+                      />
+                    </div>
+
+                    {/* Risk Level */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Risk Level
+                      </label>
+                      <Select value={risk} onValueChange={setRisk}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select risk level" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1000">All Risk Levels</SelectItem>
+                          <SelectItem value="0">Low Risk (&lt; 0.4)</SelectItem>
+                          <SelectItem value="0.4">
+                            Medium Risk (0.4-0.7)
+                          </SelectItem>
+                          <SelectItem value="0.7">High Risk (≥ 0.7)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Status */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Status
+                      </label>
+                      <Select value={status} onValueChange={setStatus}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Statuses</SelectItem>
+                          <SelectItem value="new">New</SelectItem>
+                          <SelectItem value="reviewing">Reviewing</SelectItem>
+                          <SelectItem value="resolved">Resolved</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Sort */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                        <SortAsc className="h-4 w-4" />
+                        Sort By
+                      </label>
+                      <Select onValueChange={sortCases} defaultValue="">
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose sorting..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="amount">
+                            Amount (High to Low)
+                          </SelectItem>
+                          <SelectItem value="date">
+                            Date (Newest First)
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Table Card */}
+            <Card>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Customer
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Amount
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Country
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Risk Score
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Status
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Created
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {/* this filtering is absolute cancer but it works */}
+                      {cases
+                        .filter(
+                          (caseItem) =>
+                            caseItem.customer_name
+                              .toLowerCase()
+                              .includes(queryName.toString().toLowerCase()) &&
+                            caseItem.country
+                              .toLowerCase()
+                              .includes(
+                                queryCountry.toString().toLowerCase()
+                              ) &&
+                            (risk === "0.7"
+                              ? caseItem.risk_score >= 0.7
+                              : risk === "0.4"
+                              ? caseItem.risk_score < 0.7 &&
+                                caseItem.risk_score >= 0.4
+                              : risk === "0"
+                              ? caseItem.risk_score >= 0 &&
+                                caseItem.risk_score < 0.4
+                              : caseItem.risk_score >= 0) &&
+                            (status === "all"
+                              ? caseItem.status.includes("")
+                              : caseItem.status === status)
+                        )
+                        .map((caseItem) => (
+                          <tr
+                            key={caseItem.id}
+                            onClick={() => handleRowClick(caseItem.id)}
+                            className="hover:bg-gray-50 cursor-pointer transition-colors"
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {caseItem.customer_name}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {formatCurrency(caseItem.amount)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {caseItem.country}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <RiskBadge score={caseItem.risk_score} />
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              <StatusBadge status={caseItem.status} />
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {formatDateTime(caseItem.created_at)}
+                            </td>
+                          </tr>
+                        ))}
+
+                      {/*}
                   {cases.map((caseItem) => (
                     <tr
                       key={caseItem.id}
@@ -251,13 +400,14 @@ export default function DashboardPage() {
                     </tr>
                   ))}
                   */}
-                </tbody>
-              </table>
-            </div>
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>
     </div>
   );
 }
-
