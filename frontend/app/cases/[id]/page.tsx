@@ -33,6 +33,10 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
     try {
       const data = await getCase(id);
       setCaseData(data);
+      if (data.explanation_generated) {
+        const explanationData = await explainCase(id);
+        setExplanation(explanationData);
+      }
     } catch (err) {
       setError((err as Error).message);
     } finally {
