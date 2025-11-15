@@ -95,7 +95,7 @@ Keep your response concise (2-3 sentences per section)."""
         2. Money Laundering
         3. Sanctions Violation
         Provide your response in EXACTLY this format:
-        RISK_CATEGORY: [Fraud/Money Laundering/Sanctions Violation/None]
+        RISK_CATEGORY: [Fraud/Money Laundering/Sanctions Violation]
         REASONING: [2-3 sentence explanation of key risk factors]
         """
         return prompt

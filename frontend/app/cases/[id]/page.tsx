@@ -13,6 +13,8 @@ import {
   Explanation,
   RiskScore,
   ComplianceAnalysis,
+  RiskCategory,
+  getRiskCategory,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
@@ -56,6 +58,7 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
   const [calculating, setCalculating] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [riskCategory, setRiskCategory] = useState<RiskCategory | null>(null);
   const router = useRouter();
 
   const fetchCase = async () => {
@@ -90,6 +93,20 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
     } catch (err) {
       setError((err as Error).message);
     } finally {
+      setLoading(false);
+    }
+
+    // try to fetch risk category
+    try {
+      const riskCategoryData = await getRiskCategory(id);
+      if (riskCategoryData) {
+        setRiskCategory(riskCategoryData);
+      }
+    }
+    catch (err) {
+      setError((err as Error).message);
+    }
+    finally {
       setLoading(false);
     }
   };
@@ -274,9 +291,15 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
             <CardDescription>Current status and risk level</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
+            <div className="flex flex-col gap-2">
               <p className="text-sm font-medium text-muted-foreground mb-2">
                 Risk Score
+              </p>
+              <p>
+                Risk Category: <span className="font-semibold">{riskCategory ? riskCategory.risk_category : "Nothing in risk_category"}</span>
+              </p>
+              <p>
+                <span className="font-semibold">Reasoning:</span> {riskCategory ? riskCategory.reasoning : "Nothing in reasoning"}
               </p>
               <RiskBadge score={caseData.risk_score} />
             </div>

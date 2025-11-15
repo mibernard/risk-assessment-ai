@@ -35,6 +35,16 @@ export interface Explanation {
   created_at: string;
 }
 
+export interface RiskCategory {
+  case_id: string;
+  risk_category: string;
+  reasoning: string;
+  model_used: string;
+  tokens_consumed: number;
+  generation_time_ms: number;
+  created_at: string;
+}
+
 export interface RiskScore {
   case_id: string;
   risk_score: number;
@@ -240,6 +250,26 @@ export async function getRiskScore(caseId: string): Promise<RiskScore | null> {
   }
 
   return response.json();
+}
+
+export async function getRiskCategory(caseId: string): Promise<RiskCategory | null> {
+  const response = await fetch(`${API_URL}/risk-categorize/${caseId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (response.status === 404) {
+    // No risk category calculated yet
+    return null;
+  }
+  if (!response.ok) {
+    throw new Error(`Failed to fetch risk category`);
+  }
+  
+  return response.json();
+  
 }
 
 /**
