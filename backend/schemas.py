@@ -185,3 +185,65 @@ class ErrorResponse(BaseModel):
     error_code: str
     timestamp: datetime
 
+
+class DocumentMetadata(BaseModel):
+    """Schema for document metadata."""
+    id: str
+    filename: str
+    file_type: str = Field(..., description="PDF, DOCX, TXT, etc.")
+    size_bytes: int = Field(..., ge=0)
+    uploaded_at: datetime
+    processed: bool = False
+    chunk_count: int = Field(0, ge=0, description="Number of text chunks extracted")
+    
+    class Config:
+        from_attributes = True
+
+
+class DocumentUploadResponse(BaseModel):
+    """Schema for document upload response."""
+    document_id: str
+    filename: str
+    status: str = Field(..., description="uploaded|processing|processed|failed")
+    chunks_extracted: int = Field(..., ge=0)
+    message: str
+
+
+class ComplianceAnalysisRequest(BaseModel):
+    """Schema for compliance analysis request."""
+    case_id: str = Field(..., description="UUID of the case to analyze")
+    use_documents: bool = Field(True, description="Use uploaded compliance docs for RAG")
+    
+    @field_validator("case_id")
+    @classmethod
+    def validate_uuid(cls, v: str) -> str:
+        try:
+            UUID(v)
+        except ValueError:
+            raise ValueError("case_id must be a valid UUID")
+        return v
+
+
+class ComplianceAnalysisResponse(BaseModel):
+    """Schema for compliance analysis response with RAG."""
+    case_id: str
+    compliance_status: str = Field(..., description="COMPLIANT|NON_COMPLIANT|REVIEW_REQUIRED")
+    violations: list[str] = Field(default_factory=list, description="List of potential violations")
+    relevant_regulations: list[str] = Field(default_factory=list, description="Applicable regulations")
+    recommendation: str = Field(..., description="Compliance recommendation")
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Analysis confidence")
+    documents_used: list[str] = Field(default_factory=list, description="Source documents")
+    model_used: str
+    tokens_consumed: int = Field(..., ge=0)
+    generation_time_ms: int = Field(..., ge=0)
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+class DocumentListResponse(BaseModel):
+    """Schema for listing documents."""
+    documents: list[DocumentMetadata]
+    total_count: int = Field(..., ge=0)
+

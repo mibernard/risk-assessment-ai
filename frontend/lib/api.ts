@@ -46,6 +46,43 @@ export interface RiskScore {
   created_at: string;
 }
 
+export interface DocumentMetadata {
+  id: string;
+  filename: string;
+  file_type: string;
+  size_bytes: number;
+  uploaded_at: string;
+  processed: boolean;
+  chunk_count: number;
+}
+
+export interface DocumentListResponse {
+  documents: DocumentMetadata[];
+  total_count: number;
+}
+
+export interface DocumentUploadResponse {
+  document_id: string;
+  filename: string;
+  status: string;
+  chunks_extracted: number;
+  message: string;
+}
+
+export interface ComplianceAnalysis {
+  case_id: string;
+  compliance_status: "COMPLIANT" | "NON_COMPLIANT" | "REVIEW_REQUIRED";
+  violations: string[];
+  relevant_regulations: string[];
+  recommendation: string;
+  confidence: number;
+  documents_used: string[];
+  model_used: string;
+  tokens_consumed: number;
+  generation_time_ms: number;
+  created_at: string;
+}
+
 export interface StatusDistribution {
   new: number;
   reviewing: number;
@@ -290,6 +327,95 @@ export async function getTokenUsage(): Promise<TokenUsage> {
 
   if (!response.ok) {
     throw new Error(`Failed to fetch token usage: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// ===================================
+// Document Management
+// ===================================
+
+/**
+ * Get list of all uploaded compliance documents
+ */
+export async function getDocuments(): Promise<DocumentListResponse> {
+  const response = await fetch(`${API_URL}/documents`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch documents: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Upload a compliance document (PDF, DOCX, MD)
+ */
+export async function uploadDocument(
+  file: File
+): Promise<DocumentUploadResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_URL}/documents/upload`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    if (response.status === 400) {
+      const error = await response.json();
+      throw new Error(error.detail || "Invalid file type");
+    }
+    throw new Error(`Failed to upload document: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Delete a compliance document
+ */
+export async function deleteDocument(documentId: string): Promise<void> {
+  const response = await fetch(`${API_URL}/documents/${documentId}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error("Document not found");
+    }
+    throw new Error(`Failed to delete document: ${response.statusText}`);
+  }
+}
+
+/**
+ * Analyze transaction compliance using RAG (Retrieval Augmented Generation)
+ */
+export async function analyzeCompliance(
+  caseId: string,
+  useDocuments: boolean = true
+): Promise<ComplianceAnalysis> {
+  const response = await fetch(`${API_URL}/analyze-compliance`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ case_id: caseId, use_documents: useDocuments }),
+  });
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error("Case not found");
+    }
+    if (response.status === 429) {
+      throw new Error("Token budget exceeded");
+    }
+    if (response.status === 503) {
+      throw new Error("AI service unavailable");
+    }
+    throw new Error(`Failed to analyze compliance: ${response.statusText}`);
   }
 
   return response.json();

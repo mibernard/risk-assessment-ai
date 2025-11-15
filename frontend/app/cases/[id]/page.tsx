@@ -8,9 +8,11 @@ import {
   getRiskScore,
   explainCase,
   calculateRiskScore,
+  analyzeCompliance,
   Case,
   Explanation,
   RiskScore,
+  ComplianceAnalysis,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +32,9 @@ import {
   CheckCircle,
   AlertTriangle,
   Calculator,
+  FileSearch,
+  Shield,
+  FileText,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -44,9 +49,12 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
   const [caseData, setCaseData] = useState<Case | null>(null);
   const [explanation, setExplanation] = useState<Explanation | null>(null);
   const [riskScore, setRiskScore] = useState<RiskScore | null>(null);
+  const [complianceAnalysis, setComplianceAnalysis] =
+    useState<ComplianceAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [explaining, setExplaining] = useState(false);
   const [calculating, setCalculating] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
@@ -124,6 +132,21 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
     }
   };
 
+  const handleAnalyzeCompliance = async () => {
+    if (!caseData) return;
+
+    setAnalyzing(true);
+    setError(null);
+    try {
+      const complianceData = await analyzeCompliance(caseData.id, true);
+      setComplianceAnalysis(complianceData);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="container mx-auto py-10">
@@ -164,6 +187,15 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
           <p className="text-muted-foreground">Transaction ID: {caseData.id}</p>
         </div>
         <div className="flex gap-2">
+          <Button
+            onClick={handleAnalyzeCompliance}
+            disabled={analyzing}
+            variant="outline"
+            className="gap-2"
+          >
+            <FileSearch className="h-4 w-4" />
+            {analyzing ? "Analyzing..." : "Compliance Analysis"}
+          </Button>
           <Button
             onClick={handleCalculateRisk}
             disabled={calculating}
@@ -275,6 +307,141 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Compliance Analysis - RAG-powered with IBM Docling */}
+      {complianceAnalysis && (
+        <Card className="mb-6 border-blue-200 bg-blue-50/50">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-blue-600" />
+              <CardTitle>Compliance Analysis (RAG)</CardTitle>
+            </div>
+            <CardDescription>
+              AI-powered analysis using {complianceAnalysis.model_used} with IBM
+              Docling • Time: {complianceAnalysis.generation_time_ms}ms
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Compliance Status */}
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Compliance Status</h3>
+              <div className="flex items-center gap-3">
+                {complianceAnalysis.compliance_status === "COMPLIANT" && (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded-md">
+                    <CheckCircle className="h-5 w-5" />
+                    <span className="font-semibold">COMPLIANT</span>
+                  </div>
+                )}
+                {complianceAnalysis.compliance_status === "REVIEW_REQUIRED" && (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-md">
+                    <AlertTriangle className="h-5 w-5" />
+                    <span className="font-semibold">REVIEW REQUIRED</span>
+                  </div>
+                )}
+                {complianceAnalysis.compliance_status === "NON_COMPLIANT" && (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-800 rounded-md">
+                    <AlertTriangle className="h-5 w-5" />
+                    <span className="font-semibold">NON-COMPLIANT</span>
+                  </div>
+                )}
+                <span className="text-sm text-muted-foreground">
+                  Confidence: {(complianceAnalysis.confidence * 100).toFixed(0)}
+                  %
+                </span>
+              </div>
+            </div>
+
+            {/* Violations */}
+            {complianceAnalysis.violations.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-2 text-red-700">
+                  Potential Violations
+                </h3>
+                <ul className="space-y-2">
+                  {complianceAnalysis.violations.map((violation, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-red-700">{violation}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Relevant Regulations */}
+            <div>
+              <h3 className="text-lg font-semibold mb-2">
+                Relevant Regulations
+              </h3>
+              <ul className="space-y-2">
+                {complianceAnalysis.relevant_regulations.map(
+                  (regulation, idx) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <FileText className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-muted-foreground">
+                        {regulation}
+                      </span>
+                    </li>
+                  )
+                )}
+              </ul>
+            </div>
+
+            {/* Recommendation */}
+            <div className="bg-white rounded-lg p-4 border">
+              <h3 className="text-lg font-semibold mb-2">Recommendation</h3>
+              <p className="text-muted-foreground">
+                {complianceAnalysis.recommendation}
+              </p>
+            </div>
+
+            {/* Source Documents */}
+            {complianceAnalysis.documents_used.length > 0 && (
+              <div className="pt-4 border-t">
+                <h3 className="text-sm font-semibold mb-2">
+                  Source Documents (RAG)
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {complianceAnalysis.documents_used.map((doc, idx) => (
+                    <span
+                      key={idx}
+                      className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-mono"
+                    >
+                      {doc}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Metadata */}
+            <div className="pt-4 border-t">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                <div>
+                  <p className="text-muted-foreground">Tokens Consumed</p>
+                  <p className="font-medium">
+                    {complianceAnalysis.tokens_consumed}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Generation Time</p>
+                  <p className="font-medium">
+                    {complianceAnalysis.generation_time_ms}ms
+                  </p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Generated At</p>
+                  <p className="font-medium">
+                    {new Date(
+                      complianceAnalysis.created_at
+                    ).toLocaleTimeString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* AI Risk Score */}
       {riskScore && (

@@ -8,6 +8,7 @@
 # ======================================
 fastapi>=0.115.0,<0.121.0
 uvicorn[standard]>=0.30.0,<0.40.0
+python-multipart>=0.0.9  # Required for file uploads
 
 # ======================================
 # Database (Optional - only needed for Phase 3)
@@ -28,6 +29,12 @@ python-dotenv>=1.0.0
 # ======================================
 ibm-watson-machine-learning>=1.0.335,<2.0.0
 ibm-cloud-sdk-core>=3.16.0,<4.0.0
+
+# ======================================
+# IBM Docling (Document Processing)
+# ======================================
+docling>=1.0.0,<2.0.0
+docling-core>=1.0.0,<2.0.0
 
 # ======================================
 # Utilities

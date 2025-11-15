@@ -440,6 +440,194 @@ class WatsonXService:
         reasoning = reasoning_match.group(1).strip() if reasoning_match else "No reasoning provided."
         return risk_category, reasoning
 
+    def analyze_compliance_with_rag(
+        self,
+        customer_name: str,
+        amount: float,
+        country: str,
+        risk_score: float,
+        document_context: str,
+    ) -> Dict[str, Any]:
+        """
+        Analyze transaction compliance using RAG (Retrieval Augmented Generation).
+        Uses uploaded compliance documents to provide context-aware analysis.
+        
+        Args:
+            customer_name: Customer name
+            amount: Transaction amount in USD
+            country: Country code
+            risk_score: Current risk score
+            document_context: Relevant text from compliance documents
+            
+        Returns:
+            Dictionary with:
+            - compliance_status: COMPLIANT|NON_COMPLIANT|REVIEW_REQUIRED
+            - violations: List of potential violations
+            - relevant_regulations: List of applicable regulations
+            - recommendation: Compliance recommendation
+            - confidence: Analysis confidence
+            - tokens_consumed: Number of tokens used
+            - generation_time_ms: Generation time in milliseconds
+            
+        Raises:
+            Exception: If watsonx.ai is unavailable or request fails
+        """
+        if not self.is_available():
+            raise Exception("watsonx.ai service is not available")
+        
+        # Check budget
+        if not self.token_tracker.is_within_budget(estimated_tokens=500):
+            raise Exception("Token budget exceeded")
+        
+        # Build RAG prompt with document context
+        prompt = self._build_compliance_rag_prompt(
+            customer_name=customer_name,
+            amount=amount,
+            country=country,
+            risk_score=risk_score,
+            document_context=document_context,
+        )
+        
+        # Generate response
+        start_time = time.time()
+        
+        try:
+            response = self._model.generate_text(prompt=prompt)
+            
+            generation_time_ms = int((time.time() - start_time) * 1000)
+            
+            # Parse the response
+            parsed = self._parse_compliance_analysis(response)
+            
+            # Estimate tokens
+            tokens_consumed = len(prompt + response) // 4
+            
+            # Track usage
+            self.token_tracker.track_request(
+                tokens_used=tokens_consumed,
+                model=self.MODEL_ID,
+                endpoint="/analyze-compliance",
+                metadata={
+                    "customer_name": customer_name,
+                    "amount": amount,
+                    "country": country,
+                },
+            )
+            
+            return {
+                **parsed,
+                "tokens_consumed": tokens_consumed,
+                "generation_time_ms": generation_time_ms,
+            }
+            
+        except Exception as e:
+            print(f"✗ Compliance analysis failed: {e}")
+            raise Exception(f"AI compliance analysis failed: {str(e)}")
+    
+    def _build_compliance_rag_prompt(
+        self,
+        customer_name: str,
+        amount: float,
+        country: str,
+        risk_score: float,
+        document_context: str,
+    ) -> str:
+        """Build RAG prompt for compliance analysis."""
+        prompt = f"""You are a compliance analyst reviewing a banking transaction. Use the provided compliance documents to determine if this transaction violates any regulations.
+
+=== COMPLIANCE DOCUMENTS ===
+{document_context}
+
+=== TRANSACTION TO ANALYZE ===
+Customer: {customer_name}
+Amount: ${amount:,.2f} USD
+Country: {country}
+Current Risk Score: {risk_score:.2f} (0.0 = low risk, 1.0 = high risk)
+
+=== INSTRUCTIONS ===
+Based on the compliance documents above, analyze this transaction and provide your assessment in EXACTLY this format:
+
+COMPLIANCE_STATUS: [COMPLIANT/NON_COMPLIANT/REVIEW_REQUIRED]
+VIOLATIONS: [List any potential violations, one per line, or "None" if compliant]
+RELEVANT_REGULATIONS: [List applicable regulations from the documents, one per line]
+RECOMMENDATION: [Your specific recommendation for this transaction]
+CONFIDENCE: [number between 0.0 and 1.0 indicating your confidence in this analysis]
+
+Example:
+COMPLIANCE_STATUS: REVIEW_REQUIRED
+VIOLATIONS: Transaction exceeds $10,000 threshold requiring enhanced due diligence
+RELEVANT_REGULATIONS: AML Policy - Enhanced Due Diligence requirement; KYC Guidelines - Risk-Based Approach
+RECOMMENDATION: Conduct enhanced due diligence before processing. Verify source of funds and beneficial ownership.
+CONFIDENCE: 0.85"""
+
+        return prompt
+    
+    def _parse_compliance_analysis(self, text: str) -> Dict[str, Any]:
+        """Parse compliance analysis response from AI."""
+        import re
+        
+        # Extract compliance status
+        status_match = re.search(
+            r'COMPLIANCE_STATUS:\s*(COMPLIANT|NON_COMPLIANT|REVIEW_REQUIRED)',
+            text,
+            re.IGNORECASE
+        )
+        compliance_status = status_match.group(1).upper() if status_match else "REVIEW_REQUIRED"
+        
+        # Extract violations
+        violations_match = re.search(
+            r'VIOLATIONS:\s*(.+?)(?=RELEVANT_REGULATIONS:|$)',
+            text,
+            re.IGNORECASE | re.DOTALL
+        )
+        violations_text = violations_match.group(1).strip() if violations_match else "None identified"
+        
+        # Parse violations list
+        violations = []
+        if violations_text.lower() != "none" and "none" not in violations_text.lower():
+            # Split by newlines or semicolons
+            violations = [
+                v.strip("- •").strip()
+                for v in re.split(r'[;\n]', violations_text)
+                if v.strip() and v.strip() != "None"
+            ]
+        
+        # Extract regulations
+        regulations_match = re.search(
+            r'RELEVANT_REGULATIONS:\s*(.+?)(?=RECOMMENDATION:|$)',
+            text,
+            re.IGNORECASE | re.DOTALL
+        )
+        regulations_text = regulations_match.group(1).strip() if regulations_match else ""
+        
+        # Parse regulations list
+        relevant_regulations = [
+            r.strip("- •").strip()
+            for r in re.split(r'[;\n]', regulations_text)
+            if r.strip()
+        ]
+        
+        # Extract recommendation
+        recommendation_match = re.search(
+            r'RECOMMENDATION:\s*(.+?)(?=CONFIDENCE:|$)',
+            text,
+            re.IGNORECASE | re.DOTALL
+        )
+        recommendation = recommendation_match.group(1).strip() if recommendation_match else "Manual review recommended"
+        
+        # Extract confidence
+        confidence_match = re.search(r'CONFIDENCE:\s*(0?\.\d+|1\.0|0|1)', text, re.IGNORECASE)
+        confidence = float(confidence_match.group(1)) if confidence_match else 0.7
+        confidence = max(0.0, min(1.0, confidence))
+        
+        return {
+            "compliance_status": compliance_status,
+            "violations": violations,
+            "relevant_regulations": relevant_regulations,
+            "recommendation": recommendation,
+            "confidence": confidence,
+        }
+    
     def _parse_risk_score(self, text: str) -> tuple[float, str, str]:
         """
         Parse risk score response from AI

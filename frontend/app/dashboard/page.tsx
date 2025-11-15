@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Filter, SortAsc, FileText, X } from "lucide-react";
+import { Search, Filter, SortAsc, FileText, X, FolderOpen } from "lucide-react";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -99,6 +99,12 @@ export default function DashboardPage() {
               >
                 <X className="h-4 w-4 mr-2" />
                 Clear Filters
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/documents">
+                  <FolderOpen className="h-4 w-4 mr-2" />
+                  Documents
+                </Link>
               </Button>
               <Button asChild>
                 <Link href="/report">

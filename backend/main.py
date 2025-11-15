@@ -8,8 +8,9 @@ FastAPI backend with watsonx.ai integration.
 from datetime import datetime, timedelta
 from typing import List
 from uuid import uuid4
+from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 
 from config import get_settings
@@ -27,8 +28,14 @@ from schemas import (
     TokenUsageResponse,
     ErrorResponse,
     StatusDistribution,
+    DocumentUploadResponse,
+    DocumentListResponse,
+    DocumentMetadata,
+    ComplianceAnalysisRequest,
+    ComplianceAnalysisResponse,
 )
 from services.watsonx_service import WatsonXService
+from services.document_service import document_service
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -44,6 +51,30 @@ settings = get_settings()
 
 # Initialize watsonx.ai service
 watsonx_service = WatsonXService()
+
+# Startup event: Load sample compliance documents
+@app.on_event("startup")
+async def startup_event():
+    """Load sample compliance documents on startup."""
+    compliance_docs_dir = Path(__file__).parent / "compliance_documents"
+    
+    if compliance_docs_dir.exists():
+        print("📄 Loading sample compliance documents...")
+        for doc_file in compliance_docs_dir.glob("*.md"):
+            try:
+                document_service.process_document(
+                    file_path=str(doc_file),
+                    filename=doc_file.name,
+                    file_type="MD",
+                    size_bytes=doc_file.stat().st_size,
+                )
+                print(f"  ✓ Loaded: {doc_file.name}")
+            except Exception as e:
+                print(f"  ✗ Failed to load {doc_file.name}: {e}")
+        
+        print(f"✓ {len(document_service.list_documents())} compliance documents loaded")
+    else:
+        print("⚠️  No compliance documents directory found")
 
 # Configure CORS
 app.add_middleware(
@@ -821,3 +852,306 @@ async def get_token_usage():
         requests_count=usage["requests_count"],
         percentage_used=usage["percentage_used"],
     )
+
+
+# ============================================
+# Document Management & Docling Integration
+# ============================================
+
+@app.post(
+    "/documents/upload",
+    response_model=DocumentUploadResponse,
+    tags=["Documents"],
+    summary="Upload compliance document",
+    description="Upload a compliance document (PDF/DOCX) for extraction using IBM Docling.",
+    responses={
+        400: {"model": ErrorResponse, "description": "Invalid file type"},
+        500: {"model": ErrorResponse, "description": "Processing failed"},
+    },
+)
+async def upload_document(file: UploadFile = File(...)):
+    """
+    Upload a compliance document and extract text using IBM Docling.
+    
+    Supports PDF, DOCX, and MD files. Docling extracts structured text
+    which is chunked and indexed for RAG (Retrieval Augmented Generation).
+    
+    Args:
+        file: Uploaded document file
+        
+    Returns:
+        Document metadata and processing status
+        
+    Raises:
+        HTTPException: 400 if file type not supported, 500 if processing fails
+    """
+    # Validate file type
+    allowed_extensions = {".pdf", ".docx", ".md", ".txt"}
+    file_ext = Path(file.filename).suffix.lower() if file.filename else ""
+    
+    if file_ext not in allowed_extensions:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File type {file_ext} not supported. Allowed: {', '.join(allowed_extensions)}",
+        )
+    
+    # Save file temporarily
+    upload_dir = Path("uploads")
+    upload_dir.mkdir(exist_ok=True)
+    
+    file_path = upload_dir / f"{uuid4()}{file_ext}"
+    
+    try:
+        # Save uploaded file
+        content = await file.read()
+        file_path.write_bytes(content)
+        
+        # Process with Docling
+        result = document_service.process_document(
+            file_path=str(file_path),
+            filename=file.filename or "unknown",
+            file_type=file_ext[1:].upper(),  # Remove leading dot
+            size_bytes=len(content),
+        )
+        
+        return DocumentUploadResponse(
+            document_id=result["document_id"],
+            filename=file.filename or "unknown",
+            status=result["status"],
+            chunks_extracted=result["chunks_extracted"],
+            message=f"Document processed successfully. {result['chunks_extracted']} text chunks extracted.",
+        )
+        
+    except Exception as e:
+        # Clean up file on error
+        if file_path.exists():
+            file_path.unlink()
+        
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Document processing failed: {str(e)}",
+        )
+
+
+@app.get(
+    "/documents",
+    response_model=DocumentListResponse,
+    tags=["Documents"],
+    summary="List uploaded documents",
+    description="Get list of all uploaded compliance documents.",
+)
+async def list_documents():
+    """
+    List all uploaded compliance documents with metadata.
+    
+    Returns:
+        List of document metadata including processing status
+    """
+    documents = document_service.list_documents()
+    
+    doc_metadata = [
+        DocumentMetadata(
+            id=doc["id"],
+            filename=doc["filename"],
+            file_type=doc["file_type"],
+            size_bytes=doc["size_bytes"],
+            uploaded_at=doc["uploaded_at"],
+            processed=doc.get("processed", False),
+            chunk_count=doc.get("chunk_count", 0),
+        )
+        for doc in documents
+    ]
+    
+    return DocumentListResponse(
+        documents=doc_metadata,
+        total_count=len(doc_metadata),
+    )
+
+
+@app.delete(
+    "/documents/{document_id}",
+    tags=["Documents"],
+    summary="Delete document",
+    description="Delete an uploaded compliance document.",
+    responses={
+        404: {"model": ErrorResponse, "description": "Document not found"},
+    },
+)
+async def delete_document(document_id: str):
+    """
+    Delete a compliance document and its extracted chunks.
+    
+    Args:
+        document_id: UUID of the document to delete
+        
+    Returns:
+        Success message
+        
+    Raises:
+        HTTPException: 404 if document not found
+    """
+    success = document_service.delete_document(document_id)
+    
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Document {document_id} not found",
+        )
+    
+    return {"message": "Document deleted successfully"}
+
+
+@app.post(
+    "/analyze-compliance",
+    response_model=ComplianceAnalysisResponse,
+    tags=["AI"],
+    summary="Analyze compliance with RAG",
+    description="Analyze transaction compliance using watsonx.ai with Docling-extracted document context.",
+    responses={
+        404: {"model": ErrorResponse, "description": "Case not found"},
+        503: {"model": ErrorResponse, "description": "AI service unavailable"},
+        429: {"model": ErrorResponse, "description": "Token budget exceeded"},
+    },
+)
+async def analyze_compliance(request: ComplianceAnalysisRequest):
+    """
+    Analyze transaction compliance using RAG (Retrieval Augmented Generation).
+    
+    Uses IBM Docling-extracted compliance documents to provide context-aware
+    analysis. Identifies potential violations, relevant regulations, and
+    provides recommendations based on actual compliance policies.
+    
+    This demonstrates:
+    - **IBM Docling** document processing
+    - **RAG** (Retrieval Augmented Generation) with watsonx.ai
+    - **Explainable AI** with document citations
+    
+    Args:
+        request: Compliance analysis request with case_id
+        
+    Returns:
+        Detailed compliance analysis with violations, regulations, and recommendations
+        
+    Raises:
+        HTTPException: 404 if case not found, 503 if AI unavailable, 429 if budget exceeded
+    """
+    # Check if case exists
+    if request.case_id not in CASES_DB:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Case with ID {request.case_id} not found",
+        )
+    
+    case = CASES_DB[request.case_id]
+    
+    # Get relevant document context (RAG)
+    document_context = ""
+    documents_used = []
+    
+    if request.use_documents:
+        # Retrieve relevant chunks based on transaction data
+        query = f"transaction {case['amount']} {case['country']} risk assessment compliance"
+        relevant_chunks = document_service.retrieve_relevant_chunks(query, top_k=5)
+        
+        if relevant_chunks:
+            document_context = "\n\n".join([chunk.text for chunk in relevant_chunks])
+            # Get unique document filenames
+            doc_ids = list(set([chunk.document_id for chunk in relevant_chunks]))
+            for doc_id in doc_ids:
+                doc = document_service.get_document_metadata(doc_id)
+                if doc:
+                    documents_used.append(doc["filename"])
+        else:
+            # Fallback: use all documents if no specific chunks retrieved
+            document_context = document_service.get_all_chunks_text()
+            all_docs = document_service.list_documents()
+            documents_used = [doc["filename"] for doc in all_docs]
+    
+    # Try to use real watsonx.ai with RAG
+    if watsonx_service.is_available() and document_context:
+        try:
+            # Generate compliance analysis using watsonx.ai + RAG
+            result = watsonx_service.analyze_compliance_with_rag(
+                customer_name=case["customer_name"],
+                amount=case["amount"],
+                country=case["country"],
+                risk_score=case["risk_score"],
+                document_context=document_context,
+            )
+            
+            response = ComplianceAnalysisResponse(
+                case_id=request.case_id,
+                compliance_status=result["compliance_status"],
+                violations=result["violations"],
+                relevant_regulations=result["relevant_regulations"],
+                recommendation=result["recommendation"],
+                confidence=result["confidence"],
+                documents_used=documents_used,
+                model_used=watsonx_service.MODEL_ID,
+                tokens_consumed=result["tokens_consumed"],
+                generation_time_ms=result["generation_time_ms"],
+                created_at=datetime.now(),
+            )
+            
+            # Check if budget is getting low
+            token_status = watsonx_service.get_token_status()
+            if token_status["percentage_used"] >= 90:
+                print(f"⚠️  WARNING: {token_status['percentage_used']:.1f}% of token budget used!")
+            
+            return response
+            
+        except Exception as e:
+            error_msg = str(e)
+            if "budget exceeded" in error_msg.lower():
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail="Token budget exceeded. Cannot generate more AI responses.",
+                )
+            else:
+                print(f"⚠️  watsonx.ai error: {error_msg}")
+                print("   Falling back to mock compliance analysis")
+    
+    # Fallback: Rule-based compliance analysis
+    violations = []
+    relevant_regulations = []
+    
+    # Check amount threshold
+    if case["amount"] >= 10000:
+        violations.append("Transaction exceeds $10,000 threshold requiring Enhanced Due Diligence")
+        relevant_regulations.append("AML Policy Section 2.1 - Enhanced Due Diligence Requirements")
+    
+    # Check high-risk country
+    high_risk_countries = {"IR", "KP", "SY", "RU", "CN"}
+    if case["country"] in high_risk_countries:
+        violations.append(f"Transaction involves high-risk jurisdiction: {case['country']}")
+        relevant_regulations.append("Sanctions Compliance Policy Section 4.1 - High-Risk Countries")
+    
+    # Determine status
+    if not violations:
+        compliance_status = "COMPLIANT"
+        recommendation = "Transaction approved. No compliance concerns identified. Proceed with standard processing."
+    elif len(violations) == 1:
+        compliance_status = "REVIEW_REQUIRED"
+        recommendation = "Conduct enhanced due diligence. Verify source of funds and customer background before processing."
+    else:
+        compliance_status = "NON_COMPLIANT"
+        recommendation = "BLOCK transaction. Multiple compliance violations detected. Escalate to senior compliance officer for review."
+    
+    if not relevant_regulations:
+        relevant_regulations.append("Standard Banking Compliance Procedures")
+    
+    response = ComplianceAnalysisResponse(
+        case_id=request.case_id,
+        compliance_status=compliance_status,
+        violations=violations,
+        relevant_regulations=relevant_regulations,
+        recommendation=recommendation,
+        confidence=0.75,
+        documents_used=documents_used or ["Built-in Compliance Rules"],
+        model_used="rule-based-fallback",
+        tokens_consumed=0,
+        generation_time_ms=10,
+        created_at=datetime.now(),
+    )
+    
+    return response
