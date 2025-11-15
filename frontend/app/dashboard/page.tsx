@@ -96,6 +96,7 @@ export default function DashboardPage() {
                   setQueryCountry("");
                   setRisk("1000");
                   setStatus("all");
+                  setRiskCategory("");
                 }}
               >
                 <X className="h-4 w-4 mr-2" />
