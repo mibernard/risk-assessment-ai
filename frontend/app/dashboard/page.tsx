@@ -35,6 +35,7 @@ export default function DashboardPage() {
   const [queryName, setQueryName] = useState<string | number>("");
   const [queryCountry, setQueryCountry] = useState<string | number>("");
   const [risk, setRisk] = useState<string>("1000");
+  const [riskCategory, setRiskCategory] = useState<string>("");
   const [status, setStatus] = useState<string>("all");
 
   const fetchCases = async () => {
@@ -237,6 +238,23 @@ export default function DashboardPage() {
                       </Select>
                     </div>
 
+                    {/* Risk Category */}
+                    <div className="space y-2">
+                      <label className="text-sm font-medium text-muted-foreground">Risk Category</label>
+                      <Select value={riskCategory} onValueChange={setRiskCategory}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select risk category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Fraud">Fraud</SelectItem>
+                          <SelectItem value="Money Laundering">Money Laundering</SelectItem>
+                          <SelectItem value="Sanctions">
+                            Sanctions
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                     {/* Status */}
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-muted-foreground">
@@ -323,6 +341,12 @@ export default function DashboardPage() {
                         >
                           Created
                         </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Category
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
@@ -349,7 +373,12 @@ export default function DashboardPage() {
                               : caseItem.risk_score >= 0) &&
                             (status === "all"
                               ? caseItem.status.includes("")
-                              : caseItem.status === status)
+                              : caseItem.status === status) &&
+                            (riskCategory === ""
+                              ? caseItem.category
+                                  .toLowerCase()
+                                  .includes("")
+                              : caseItem.category === riskCategory)
                         )
                         .map((caseItem) => (
                           <tr
@@ -374,6 +403,9 @@ export default function DashboardPage() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                               {formatDateTime(caseItem.created_at)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {caseItem.category}
                             </td>
                           </tr>
                         ))}

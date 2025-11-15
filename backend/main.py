@@ -101,6 +101,7 @@ CASES_DB = {
         "status": "new",
         "created_at": datetime.now() - timedelta(hours=2),
         "explanation_generated": False,
+        "category": "Fraud",
     },
     "660e8400-e29b-41d4-a716-446655440001": {
         "id": "660e8400-e29b-41d4-a716-446655440001",
@@ -111,6 +112,7 @@ CASES_DB = {
         "status": "reviewing",
         "created_at": datetime.now() - timedelta(hours=5),
         "explanation_generated": False,
+        "category": "Fraud",
     },
     "770e8400-e29b-41d4-a716-446655440002": {
         "id": "770e8400-e29b-41d4-a716-446655440002",
@@ -121,6 +123,7 @@ CASES_DB = {
         "status": "resolved",
         "created_at": datetime.now() - timedelta(days=1),
         "explanation_generated": False,
+        "category": "Fraud",
     },
     "880e8400-e29b-41d4-a716-446655440003": {
         "id": "880e8400-e29b-41d4-a716-446655440003",
@@ -131,6 +134,7 @@ CASES_DB = {
         "status": "new",
         "created_at": datetime.now() - timedelta(hours=1),
         "explanation_generated": False,
+        "category": "Fraud",
     },
     "990e8400-e29b-41d4-a716-446655440004": {
         "id": "990e8400-e29b-41d4-a716-446655440004",
@@ -141,6 +145,7 @@ CASES_DB = {
         "status": "reviewing",
         "created_at": datetime.now() - timedelta(hours=8),
         "explanation_generated": False,
+        "category": "Fraud",
     },
     "aa0e8400-e29b-41d4-a716-446655440005": {
         "id": "aa0e8400-e29b-41d4-a716-446655440005",
@@ -151,6 +156,7 @@ CASES_DB = {
         "status": "new",
         "created_at": datetime.now() - timedelta(hours=3),
         "explanation_generated": False,
+        "category": "Fraud",
     },
     "bb0e8400-e29b-41d4-a716-446655440006": {
         "id": "bb0e8400-e29b-41d4-a716-446655440006",
@@ -161,6 +167,7 @@ CASES_DB = {
         "status": "reviewing",
         "created_at": datetime.now() - timedelta(hours=6),
         "explanation_generated": False,
+        "category": "Fraud",
     },
     "cc0e8400-e29b-41d4-a716-446655440007": {
         "id": "cc0e8400-e29b-41d4-a716-446655440007",
@@ -171,6 +178,7 @@ CASES_DB = {
         "status": "resolved",
         "created_at": datetime.now() - timedelta(days=2),
         "explanation_generated": False,
+        "category": "Fraud",
     },
     "dd0e8400-e29b-41d4-a716-446655440008": {
         "id": "dd0e8400-e29b-41d4-a716-446655440008",
@@ -181,6 +189,7 @@ CASES_DB = {
         "status": "new",
         "created_at": datetime.now() - timedelta(minutes=45),
         "explanation_generated": False,
+        "category": "Money Laundering",
     },
     "ee0e8400-e29b-41d4-a716-446655440009": {
         "id": "ee0e8400-e29b-41d4-a716-446655440009",
@@ -191,6 +200,7 @@ CASES_DB = {
         "status": "resolved",
         "created_at": datetime.now() - timedelta(days=3),
         "explanation_generated": False,
+        "category": "Fraud",
     },
 }
 

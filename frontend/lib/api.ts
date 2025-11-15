@@ -22,6 +22,7 @@ export interface Case {
   explanation_generated?: boolean;
   model_version?: string;
   tokens_used?: number;
+  category?: string | "Unknown";
 }
 
 export interface Explanation {

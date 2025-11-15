@@ -38,6 +38,7 @@ class CaseResponse(CaseBase):
     explanation_generated: Optional[bool] = False
     model_version: Optional[str] = None
     tokens_used: Optional[int] = None
+    category: Optional[str] = None
     
     class Config:
         from_attributes = True
