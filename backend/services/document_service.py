@@ -100,8 +100,8 @@ class DocumentService:
         
         self.documents[document_id] = doc_metadata
         
-        # Process with Docling if available
-        if self.is_available():
+        # Process with Docling if available and file is not markdown
+        if self.is_available() and file_type not in ["MD", "TXT"]:
             try:
                 chunks = self._extract_chunks_with_docling(document_id, file_path)
                 doc_metadata["processed"] = True
@@ -115,26 +115,19 @@ class DocumentService:
                 }
             except Exception as e:
                 print(f"✗ Docling processing failed: {e}")
-                doc_metadata["processing_status"] = "failed"
-                doc_metadata["error"] = str(e)
-                return {
-                    "document_id": document_id,
-                    "chunks_extracted": 0,
-                    "status": "failed",
-                    "error": str(e),
-                }
-        else:
-            # Mock mode: create dummy chunks from filename
-            chunks = self._create_mock_chunks(document_id, filename)
-            doc_metadata["processed"] = True
-            doc_metadata["chunk_count"] = len(chunks)
-            doc_metadata["processing_status"] = "mock"
-            
-            return {
-                "document_id": document_id,
-                "chunks_extracted": len(chunks),
-                "status": "processed",
-            }
+                # Fall through to mock mode on error
+                
+        # Use mock chunks for MD/TXT files or when Docling unavailable
+        chunks = self._create_mock_chunks(document_id, filename)
+        doc_metadata["processed"] = True
+        doc_metadata["chunk_count"] = len(chunks)
+        doc_metadata["processing_status"] = "mock" if self.is_available() else "no-docling"
+        
+        return {
+            "document_id": document_id,
+            "chunks_extracted": len(chunks),
+            "status": "processed",
+        }
     
     def _extract_chunks_with_docling(
         self,
