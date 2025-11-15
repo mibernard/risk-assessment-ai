@@ -92,9 +92,7 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
       }
     } catch (err) {
       setError((err as Error).message);
-    } finally {
-      setLoading(false);
-    }
+    } 
 
     // try to fetch risk category
     try {
