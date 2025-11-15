@@ -31,6 +31,8 @@ Guidelines:
         amount: float,
         country: str,
         risk_score: float,
+        account_age_days: int = None,
+        transaction_count_30d: int = None,
     ) -> str:
         """
         Build a prompt for risk explanation
@@ -52,20 +54,29 @@ Guidelines:
         else:
             risk_level = "LOW"
 
+        # Build AML context
+        aml_context = ""
+        if account_age_days is not None:
+            aml_context += f"\nAccount Age: {account_age_days} days"
+        if transaction_count_30d is not None:
+            aml_context += f"\nTransaction Velocity: {transaction_count_30d} large transactions in past 30 days"
+        
         # Build the user prompt
-        user_prompt = f"""Analyze this banking transaction for risk:
+        user_prompt = f"""Analyze this banking transaction for AML/fraud risk:
 
 Customer: {customer_name}
 Amount: ${amount:,.2f} USD
 Country: {country}
-Risk Score: {risk_score:.2f} ({risk_level} RISK)
+Risk Score: {risk_score:.2f} ({risk_level} RISK){aml_context}
 
 Provide:
 1. Brief explanation of why this transaction has a {risk_level} risk score
-2. Key risk factors (amount, country, patterns)
+2. Key risk factors (amount, country, account age, transaction velocity)
 3. Recommended action (approve, review, escalate)
 
-Keep your response concise (2-3 sentences per section)."""
+Keep your response concise (2-3 sentences per section).
+
+Respond ONLY with the analysis above. Do not generate additional transactions or examples."""
 
         return user_prompt
 
@@ -137,10 +148,7 @@ RISK_SCORE: [number between 0.0 and 1.0]
 REASONING: [2-3 sentence explanation of key risk factors]
 RISK_LEVEL: [LOW/MEDIUM/HIGH]
 
-Example:
-RISK_SCORE: 0.75
-REASONING: Large transaction amount ($50,000) to a high-risk jurisdiction raises AML concerns. The country has known issues with financial crime. Additional due diligence is recommended.
-RISK_LEVEL: HIGH"""
+Respond ONLY with the analysis above. Do not generate additional examples."""
 
         return user_prompt
 

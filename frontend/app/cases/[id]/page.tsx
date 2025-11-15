@@ -49,14 +49,15 @@ interface CaseDetailPageProps {
 export default function CaseDetailPage({ params }: CaseDetailPageProps) {
   const { id } = use(params);
   const [caseData, setCaseData] = useState<Case | null>(null);
-  const [explanation, setExplanation] = useState<Explanation | null>(null);
-  const [riskScore, setRiskScore] = useState<RiskScore | null>(null);
+  const [riskAnalysis, setRiskAnalysis] = useState<{
+    score: RiskScore;
+    explanation: Explanation;
+  } | null>(null);
   const [complianceAnalysis, setComplianceAnalysis] =
     useState<ComplianceAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
-  const [explaining, setExplaining] = useState(false);
-  const [calculating, setCalculating] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzingRisk, setAnalyzingRisk] = useState(false);
+  const [analyzingCompliance, setAnalyzingCompliance] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [riskCategory, setRiskCategory] = useState<RiskCategory | null>(null);
   const router = useRouter();
@@ -68,31 +69,27 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
       const data = await getCase(id);
       setCaseData(data);
 
-      // If explanation was previously generated, fetch it
+      // Try to fetch previously generated AI analysis
       if (data.explanation_generated) {
         try {
-          const explanationData = await getExplanation(id);
-          if (explanationData) {
-            setExplanation(explanationData);
+          const [explanationData, riskScoreData] = await Promise.all([
+            getExplanation(id).catch(() => null),
+            getRiskScore(id).catch(() => null),
+          ]);
+
+          if (explanationData && riskScoreData) {
+            setRiskAnalysis({
+              score: riskScoreData,
+              explanation: explanationData,
+            });
           }
         } catch (err) {
-          console.error("Failed to fetch stored explanation:", err);
+          console.debug("No stored analysis found");
         }
-      }
-
-      // Try to fetch previously calculated risk score
-      try {
-        const riskScoreData = await getRiskScore(id);
-        if (riskScoreData) {
-          setRiskScore(riskScoreData);
-        }
-      } catch (err) {
-        // Risk score might not exist yet, that's okay
-        console.debug("No stored risk score found");
       }
     } catch (err) {
       setError((err as Error).message);
-    } 
+    }
 
     // try to fetch risk category
     try {
@@ -100,11 +97,9 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
       if (riskCategoryData) {
         setRiskCategory(riskCategoryData);
       }
-    }
-    catch (err) {
+    } catch (err) {
       setError((err as Error).message);
-    }
-    finally {
+    } finally {
       setLoading(false);
     }
   };
@@ -113,44 +108,40 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
     fetchCase();
   }, [id]);
 
-  const handleExplainRisk = async () => {
+  const handleAnalyzeRisk = async () => {
     if (!caseData) return;
 
-    setExplaining(true);
+    setAnalyzingRisk(true);
     setError(null);
     try {
-      const explanationData = await explainCase(caseData.id);
-      setExplanation(explanationData);
-      // Update case to mark explanation as generated
-      setCaseData({ ...caseData, explanation_generated: true });
+      // Run both AI analyses in parallel
+      const [riskScoreData, explanationData] = await Promise.all([
+        calculateRiskScore(caseData.id),
+        explainCase(caseData.id),
+      ]);
+
+      setRiskAnalysis({
+        score: riskScoreData,
+        explanation: explanationData,
+      });
+
+      // Update case with new risk score and mark explanation as generated
+      setCaseData({
+        ...caseData,
+        risk_score: riskScoreData.risk_score,
+        explanation_generated: true,
+      });
     } catch (err) {
       setError((err as Error).message);
     } finally {
-      setExplaining(false);
-    }
-  };
-
-  const handleCalculateRisk = async () => {
-    if (!caseData) return;
-
-    setCalculating(true);
-    setError(null);
-    try {
-      const riskData = await calculateRiskScore(caseData.id);
-      setRiskScore(riskData);
-      // Update case with new risk score
-      setCaseData({ ...caseData, risk_score: riskData.risk_score });
-    } catch (err) {
-      setError((err as Error).message);
-    } finally {
-      setCalculating(false);
+      setAnalyzingRisk(false);
     }
   };
 
   const handleAnalyzeCompliance = async () => {
     if (!caseData) return;
 
-    setAnalyzing(true);
+    setAnalyzingCompliance(true);
     setError(null);
     try {
       const complianceData = await analyzeCompliance(caseData.id, true);
@@ -158,7 +149,7 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
     } catch (err) {
       setError((err as Error).message);
     } finally {
-      setAnalyzing(false);
+      setAnalyzingCompliance(false);
     }
   };
 
@@ -204,33 +195,20 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
         <div className="flex gap-2">
           <Button
             onClick={handleAnalyzeCompliance}
-            disabled={analyzing}
+            disabled={analyzingCompliance}
             variant="outline"
             className="gap-2"
           >
             <FileSearch className="h-4 w-4" />
-            {analyzing ? "Analyzing..." : "Compliance Analysis"}
+            {analyzingCompliance ? "Analyzing..." : "Check Compliance (RAG)"}
           </Button>
           <Button
-            onClick={handleCalculateRisk}
-            disabled={calculating}
-            variant="outline"
-            className="gap-2"
-          >
-            <Calculator className="h-4 w-4" />
-            {calculating ? "Calculating..." : "Calculate Risk Score"}
-          </Button>
-          <Button
-            onClick={handleExplainRisk}
-            disabled={explaining || caseData.explanation_generated}
+            onClick={handleAnalyzeRisk}
+            disabled={analyzingRisk}
             className="gap-2"
           >
             <Sparkles className="h-4 w-4" />
-            {explaining
-              ? "Analyzing..."
-              : caseData.explanation_generated
-              ? "Explanation Generated"
-              : "Explain Risk"}
+            {analyzingRisk ? "Analyzing..." : "AI Risk Analysis"}
           </Button>
         </div>
       </div>
@@ -280,6 +258,41 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
                 {new Date(caseData.created_at).toLocaleString()}
               </p>
             </div>
+            <div className="pt-4 border-t">
+              <p className="text-sm font-medium text-muted-foreground mb-3">
+                AML Indicators
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Account Age</p>
+                  <p className="text-lg font-semibold">
+                    {caseData.account_age_days} days
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {caseData.account_age_days < 30
+                      ? "⚠️ New account"
+                      : caseData.account_age_days < 180
+                      ? "✓ Established"
+                      : "✓ Well established"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    Transaction Velocity
+                  </p>
+                  <p className="text-lg font-semibold">
+                    {caseData.transaction_count_30d} / 30d
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {caseData.transaction_count_30d >= 7
+                      ? "⚠️ High velocity"
+                      : caseData.transaction_count_30d >= 4
+                      ? "⚠️ Elevated"
+                      : "✓ Normal"}
+                  </p>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -289,18 +302,25 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
             <CardDescription>Current status and risk level</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex flex-col gap-2">
+            <div>
               <p className="text-sm font-medium text-muted-foreground mb-2">
                 Risk Score
               </p>
-              <p>
-                Risk Category: <span className="font-semibold">{riskCategory ? riskCategory.risk_category : "Nothing in risk_category"}</span>
-              </p>
-              <p>
-                <span className="font-semibold">Reasoning:</span> {riskCategory ? riskCategory.reasoning : "Nothing in reasoning"}
-              </p>
               <RiskBadge score={caseData.risk_score} />
             </div>
+            {riskCategory && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground mb-2">
+                  Risk Category
+                </p>
+                <p className="font-semibold mb-2">
+                  {riskCategory.risk_category}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {riskCategory.reasoning}
+                </p>
+              </div>
+            )}
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-2">
                 Status
@@ -464,34 +484,34 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
         </Card>
       )}
 
-      {/* AI Risk Score */}
-      {riskScore && (
+      {/* Comprehensive AI Risk Analysis */}
+      {riskAnalysis && (
         <Card className="mb-6">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Calculator className="h-5 w-5 text-primary" />
-              <CardTitle>AI Risk Score</CardTitle>
+              <Sparkles className="h-5 w-5 text-primary" />
+              <CardTitle>AI Risk Analysis</CardTitle>
             </div>
             <CardDescription>
-              Calculated by {riskScore.model_used} • Time:{" "}
-              {riskScore.generation_time_ms}ms
+              Generated by {riskAnalysis.score.model_used} • Confidence:{" "}
+              {(riskAnalysis.explanation.confidence * 100).toFixed(0)}%
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Risk Score */}
             <div>
-              <h3 className="text-lg font-semibold mb-3">
-                Calculated Risk Score
-              </h3>
+              <h3 className="text-lg font-semibold mb-3">Risk Score</h3>
               <div className="flex items-center gap-4">
                 <div className="text-4xl font-bold">
-                  {(riskScore.risk_score * 100).toFixed(0)}%
+                  {(riskAnalysis.score.risk_score * 100).toFixed(0)}%
                 </div>
-                <RiskBadge score={riskScore.risk_score} />
+                <RiskBadge score={riskAnalysis.score.risk_score} />
               </div>
               <p className="text-sm text-muted-foreground mt-2">
                 Risk Level:{" "}
-                <span className="font-semibold">{riskScore.risk_level}</span>
+                <span className="font-semibold">
+                  {riskAnalysis.score.risk_level}
+                </span>
               </p>
             </div>
 
@@ -499,66 +519,26 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
             <div>
               <h3 className="text-lg font-semibold mb-2">AI Reasoning</h3>
               <p className="text-muted-foreground whitespace-pre-wrap">
-                {riskScore.reasoning}
+                {riskAnalysis.score.reasoning}
               </p>
             </div>
 
-            {/* Metadata */}
-            <div className="pt-4 border-t">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Tokens Consumed</p>
-                  <p className="font-medium">{riskScore.tokens_consumed}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Generation Time</p>
-                  <p className="font-medium">
-                    {riskScore.generation_time_ms}ms
-                  </p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Generated At</p>
-                  <p className="font-medium">
-                    {new Date(riskScore.created_at).toLocaleTimeString()}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* AI Explanation */}
-      {explanation && (
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              <CardTitle>AI Risk Explanation</CardTitle>
-            </div>
-            <CardDescription>
-              Generated by {explanation.model_used} • Confidence:{" "}
-              {(explanation.confidence * 100).toFixed(0)}% • Time:{" "}
-              {explanation.generation_time_ms}ms
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Rationale */}
+            {/* Detailed Analysis */}
             <div>
-              <h3 className="text-lg font-semibold mb-2">Rationale</h3>
+              <h3 className="text-lg font-semibold mb-2">Detailed Analysis</h3>
               <p className="text-muted-foreground whitespace-pre-wrap">
-                {explanation.rationale}
+                {riskAnalysis.explanation.rationale}
               </p>
             </div>
 
             {/* Recommended Action */}
-            <div>
-              <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-green-600" />
+            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+              <h3 className="text-lg font-semibold mb-2 flex items-center gap-2 text-blue-900">
+                <CheckCircle className="h-5 w-5 text-blue-600" />
                 Recommended Action
               </h3>
-              <p className="text-muted-foreground whitespace-pre-wrap">
-                {explanation.recommended_action}
+              <p className="text-blue-800">
+                {riskAnalysis.explanation.recommended_action}
               </p>
             </div>
 
@@ -566,25 +546,30 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
             <div className="pt-4 border-t">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
-                  <p className="text-muted-foreground">Tokens Consumed</p>
-                  <p className="font-medium">{explanation.tokens_consumed}</p>
+                  <p className="text-muted-foreground">Total Tokens</p>
+                  <p className="font-medium">
+                    {riskAnalysis.score.tokens_consumed +
+                      riskAnalysis.explanation.tokens_consumed}
+                  </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Confidence</p>
                   <p className="font-medium">
-                    {(explanation.confidence * 100).toFixed(1)}%
+                    {(riskAnalysis.explanation.confidence * 100).toFixed(1)}%
                   </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Generation Time</p>
                   <p className="font-medium">
-                    {explanation.generation_time_ms}ms
+                    {riskAnalysis.score.generation_time_ms +
+                      riskAnalysis.explanation.generation_time_ms}
+                    ms
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Generated At</p>
-                  <p className="font-medium">
-                    {new Date(explanation.created_at).toLocaleTimeString()}
+                  <p className="text-muted-foreground">Model</p>
+                  <p className="font-medium text-xs">
+                    {riskAnalysis.score.model_used}
                   </p>
                 </div>
               </div>
@@ -593,20 +578,19 @@ export default function CaseDetailPage({ params }: CaseDetailPageProps) {
         </Card>
       )}
 
-      {/* Prompt to generate explanation */}
-      {!explanation && !caseData.explanation_generated && (
-        <Card className="border-dashed">
+      {/* Prompt to generate AI analysis */}
+      {!riskAnalysis && !caseData.explanation_generated && (
+        <Card className="border-dashed mb-6">
           <CardContent className="flex flex-col items-center justify-center py-10">
             <Sparkles className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">
-              No AI Explanation Yet
-            </h3>
+            <h3 className="text-lg font-semibold mb-2">No AI Analysis Yet</h3>
             <p className="text-muted-foreground text-center mb-4">
-              Click "Explain Risk" to generate an AI-powered analysis of this
-              transaction
+              Click "AI Risk Analysis" to generate a comprehensive AI-powered
+              assessment
             </p>
-            <Button onClick={handleExplainRisk} disabled={explaining}>
-              {explaining ? "Analyzing..." : "Generate Explanation"}
+            <Button onClick={handleAnalyzeRisk} disabled={analyzingRisk}>
+              <Sparkles className="h-4 w-4 mr-2" />
+              {analyzingRisk ? "Analyzing..." : "Generate AI Analysis"}
             </Button>
           </CardContent>
         </Card>

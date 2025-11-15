@@ -102,6 +102,8 @@ CASES_DB = {
         "created_at": datetime.now() - timedelta(hours=2),
         "explanation_generated": False,
         "category": "Fraud",
+        "account_age_days": 12,  # New account = higher risk
+        "transaction_count_30d": 8,  # High velocity = suspicious
     },
     "660e8400-e29b-41d4-a716-446655440001": {
         "id": "660e8400-e29b-41d4-a716-446655440001",
@@ -113,6 +115,8 @@ CASES_DB = {
         "created_at": datetime.now() - timedelta(hours=5),
         "explanation_generated": False,
         "category": "Fraud",
+        "account_age_days": 340,  # Established account
+        "transaction_count_30d": 4,  # Moderate velocity
     },
     "770e8400-e29b-41d4-a716-446655440002": {
         "id": "770e8400-e29b-41d4-a716-446655440002",
@@ -124,6 +128,8 @@ CASES_DB = {
         "created_at": datetime.now() - timedelta(days=1),
         "explanation_generated": False,
         "category": "Fraud",
+        "account_age_days": 1240,  # Very established = low risk
+        "transaction_count_30d": 1,  # Low velocity
     },
     "880e8400-e29b-41d4-a716-446655440003": {
         "id": "880e8400-e29b-41d4-a716-446655440003",
@@ -135,6 +141,8 @@ CASES_DB = {
         "created_at": datetime.now() - timedelta(hours=1),
         "explanation_generated": False,
         "category": "Fraud",
+        "account_age_days": 3,  # Brand new account = very risky
+        "transaction_count_30d": 5,  # Multiple transactions immediately = red flag
     },
     "990e8400-e29b-41d4-a716-446655440004": {
         "id": "990e8400-e29b-41d4-a716-446655440004",
@@ -146,6 +154,8 @@ CASES_DB = {
         "created_at": datetime.now() - timedelta(hours=8),
         "explanation_generated": False,
         "category": "Fraud",
+        "account_age_days": 45,  # Relatively new
+        "transaction_count_30d": 6,  # Elevated velocity
     },
     "aa0e8400-e29b-41d4-a716-446655440005": {
         "id": "aa0e8400-e29b-41d4-a716-446655440005",
@@ -157,6 +167,8 @@ CASES_DB = {
         "created_at": datetime.now() - timedelta(hours=3),
         "explanation_generated": False,
         "category": "Fraud",
+        "account_age_days": 580,  # Established
+        "transaction_count_30d": 3,  # Normal velocity
     },
     "bb0e8400-e29b-41d4-a716-446655440006": {
         "id": "bb0e8400-e29b-41d4-a716-446655440006",
@@ -168,6 +180,8 @@ CASES_DB = {
         "created_at": datetime.now() - timedelta(hours=6),
         "explanation_generated": False,
         "category": "Fraud",
+        "account_age_days": 28,  # New account + large transaction
+        "transaction_count_30d": 7,  # High velocity
     },
     "cc0e8400-e29b-41d4-a716-446655440007": {
         "id": "cc0e8400-e29b-41d4-a716-446655440007",
@@ -179,6 +193,8 @@ CASES_DB = {
         "created_at": datetime.now() - timedelta(days=2),
         "explanation_generated": False,
         "category": "Fraud",
+        "account_age_days": 890,  # Well established
+        "transaction_count_30d": 2,  # Low velocity
     },
     "dd0e8400-e29b-41d4-a716-446655440008": {
         "id": "dd0e8400-e29b-41d4-a716-446655440008",
@@ -190,6 +206,8 @@ CASES_DB = {
         "created_at": datetime.now() - timedelta(minutes=45),
         "explanation_generated": False,
         "category": "Money Laundering",
+        "account_age_days": 7,  # Very new + large amount = AML red flag
+        "transaction_count_30d": 9,  # Very high velocity
     },
     "ee0e8400-e29b-41d4-a716-446655440009": {
         "id": "ee0e8400-e29b-41d4-a716-446655440009",
@@ -201,6 +219,8 @@ CASES_DB = {
         "created_at": datetime.now() - timedelta(days=3),
         "explanation_generated": False,
         "category": "Fraud",
+        "account_age_days": 720,  # Established account
+        "transaction_count_30d": 2,  # Low velocity
     },
 }
 
@@ -357,6 +377,8 @@ async def explain_case(request: ExplanationRequest):
                 amount=case["amount"],
                 country=case["country"],
                 risk_score=case["risk_score"],
+                account_age_days=case.get("account_age_days"),
+                transaction_count_30d=case.get("transaction_count_30d"),
             )
             
             # Create response
@@ -1087,6 +1109,8 @@ async def analyze_compliance(request: ComplianceAnalysisRequest):
                 country=case["country"],
                 risk_score=case["risk_score"],
                 document_context=document_context,
+                account_age_days=case.get("account_age_days"),
+                transaction_count_30d=case.get("transaction_count_30d"),
             )
             
             response = ComplianceAnalysisResponse(
@@ -1129,31 +1153,52 @@ async def analyze_compliance(request: ComplianceAnalysisRequest):
             else:
                 print("   Falling back to rule-based compliance analysis")
     
-    # Fallback: Rule-based compliance analysis
+    # Fallback: Rule-based compliance analysis with AML indicators
     violations = []
     relevant_regulations = []
     
-    # Check amount threshold
+    account_age = case.get("account_age_days", 0)
+    velocity = case.get("transaction_count_30d", 0)
+    
+    # Check amount threshold (CTR filing requirement)
     if case["amount"] >= 10000:
-        violations.append("Transaction exceeds $10,000 threshold requiring Enhanced Due Diligence")
-        relevant_regulations.append("AML Policy Section 2.1 - Enhanced Due Diligence Requirements")
+        violations.append("Transaction exceeds $10,000 threshold requiring Currency Transaction Report (CTR) filing")
+        relevant_regulations.append("Bank Secrecy Act - CTR Requirement for transactions ≥$10,000")
+    
+    # Check for structuring (amounts just under $10k with suspicious patterns)
+    if 9000 <= case["amount"] < 10000 and account_age < 30:
+        violations.append("Possible structuring: Transaction amount just under $10k threshold from new account")
+        relevant_regulations.append("31 U.S.C. § 5324 - Structuring Prohibition")
+    
+    # Check new account with large transaction
+    if account_age < 30 and case["amount"] >= 5000:
+        violations.append(f"Large transaction (${case['amount']:,.2f}) from new account ({account_age} days old)")
+        relevant_regulations.append("AML Policy - Enhanced Due Diligence for New Accounts")
+    
+    # Check high transaction velocity
+    if velocity >= 7:
+        violations.append(f"High transaction velocity: {velocity} large transactions in 30 days")
+        relevant_regulations.append("Suspicious Activity Reporting (SAR) - Unusual Transaction Patterns")
+    elif velocity >= 5 and account_age < 90:
+        violations.append(f"Elevated velocity for account age: {velocity} transactions in 30 days for {account_age}-day-old account")
+        relevant_regulations.append("AML Policy - Transaction Monitoring Requirements")
     
     # Check high-risk country
-    high_risk_countries = {"IR", "KP", "SY", "RU", "CN"}
+    high_risk_countries = {"IR", "KP", "SY", "RU", "CN", "CH"}  # Added CH (Switzerland) for banking secrecy
     if case["country"] in high_risk_countries:
         violations.append(f"Transaction involves high-risk jurisdiction: {case['country']}")
-        relevant_regulations.append("Sanctions Compliance Policy Section 4.1 - High-Risk Countries")
+        relevant_regulations.append("Sanctions Compliance Policy - High-Risk Country Screening")
     
-    # Determine status
+    # Determine status based on severity
     if not violations:
         compliance_status = "COMPLIANT"
         recommendation = "Transaction approved. No compliance concerns identified. Proceed with standard processing."
-    elif len(violations) == 1:
-        compliance_status = "REVIEW_REQUIRED"
-        recommendation = "Conduct enhanced due diligence. Verify source of funds and customer background before processing."
-    else:
+    elif len(violations) >= 3:
         compliance_status = "NON_COMPLIANT"
-        recommendation = "BLOCK transaction. Multiple compliance violations detected. Escalate to senior compliance officer for review."
+        recommendation = "BLOCK transaction immediately. Multiple severe AML violations detected. Escalate to compliance officer and consider filing Suspicious Activity Report (SAR)."
+    else:
+        compliance_status = "REVIEW_REQUIRED"
+        recommendation = "Conduct enhanced due diligence before processing. Verify customer identity, source of funds, and transaction purpose. Document all findings."
     
     if not relevant_regulations:
         relevant_regulations.append("Standard Banking Compliance Procedures")

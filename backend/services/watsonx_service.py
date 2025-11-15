@@ -45,12 +45,13 @@ class WatsonXService:
             return None
         return {
             GenParams.DECODING_METHOD: "greedy",
-            GenParams.MAX_NEW_TOKENS: 300,
+            GenParams.MAX_NEW_TOKENS: 800,  # Increased for complete responses
             GenParams.MIN_NEW_TOKENS: 50,
             GenParams.TEMPERATURE: 0.3,
             GenParams.TOP_K: 50,
             GenParams.TOP_P: 0.9,
             GenParams.REPETITION_PENALTY: 1.1,
+            GenParams.STOP_SEQUENCES: ["Prompt:", "\n\nPrompt:"],  # Stop if echoing prompt
         }
 
     def __init__(self):
@@ -101,6 +102,52 @@ class WatsonXService:
     def is_available(self) -> bool:
         """Check if watsonx.ai is available"""
         return self._model is not None
+    
+    def _clean_response(self, response: str) -> str:
+        """
+        Clean AI response by removing prompt echoing, hallucinations, and truncations.
+        
+        Args:
+            response: Raw response from watsonx.ai
+            
+        Returns:
+            Cleaned response text
+        """
+        # Remove prompt echo if present (case-insensitive)
+        prompt_markers = [
+            "Prompt:",
+            "\n\nPrompt:",
+            "Prompt 2:",
+            "\n\nPrompt 2:",
+            "Example:",
+            "\n\nExample:",
+            "Another example:",
+            "Analyze this banking transaction",
+        ]
+        
+        for marker in prompt_markers:
+            if marker in response:
+                # Split and keep only the first part
+                response = response.split(marker)[0].strip()
+        
+        # Remove common AI meta-text
+        meta_patterns = [
+            "Here is the analysis:",
+            "Here's the analysis:",
+            "Analysis:",
+        ]
+        for pattern in meta_patterns:
+            if response.startswith(pattern):
+                response = response[len(pattern):].strip()
+        
+        # Remove incomplete numbered list items (e.g., "3." with no content)
+        import re
+        # Remove lines that are just a number followed by period and whitespace/newline
+        response = re.sub(r'\n\d+\.\s*\n', '\n', response)
+        # Also remove if it's at the end
+        response = re.sub(r'\n\d+\.\s*$', '', response)
+        
+        return response.strip()
 
     def generate_explanation(
         self,
@@ -108,6 +155,8 @@ class WatsonXService:
         amount: float,
         country: str,
         risk_score: float,
+        account_age_days: int = None,
+        transaction_count_30d: int = None,
     ) -> Dict[str, Any]:
         """
         Generate risk explanation using watsonx.ai
@@ -142,6 +191,8 @@ class WatsonXService:
             amount=amount,
             country=country,
             risk_score=risk_score,
+            account_age_days=account_age_days,
+            transaction_count_30d=transaction_count_30d,
         )
 
         # Generate response
@@ -152,8 +203,22 @@ class WatsonXService:
             
             generation_time_ms = int((time.time() - start_time) * 1000)
             
-            # Parse response (watsonx.ai returns text directly)
-            explanation_text = response.strip()
+            # Debug: Print raw response
+            print(f"\n{'='*60}")
+            print("RAW AI RESPONSE (Explanation):")
+            print(f"{'='*60}")
+            print(response)
+            print(f"{'='*60}\n")
+            
+            # Clean and parse response
+            explanation_text = self._clean_response(response)
+            
+            # Debug: Print cleaned response
+            print(f"\n{'='*60}")
+            print("CLEANED RESPONSE (Explanation):")
+            print(f"{'='*60}")
+            print(explanation_text)
+            print(f"{'='*60}\n")
             
             # Estimate tokens (rough approximation: 1 token ≈ 4 characters)
             tokens_consumed = len(prompt + explanation_text) // 4
@@ -238,8 +303,9 @@ class WatsonXService:
             
             generation_time_ms = int((time.time() - start_time) * 1000)
             
-            # Parse the response
-            risk_score, reasoning, risk_level = self._parse_risk_score(response)
+            # Clean and parse the response
+            cleaned_response = self._clean_response(response)
+            risk_score, reasoning, risk_level = self._parse_risk_score(cleaned_response)
             
             # Estimate tokens
             tokens_consumed = len(prompt + response) // 4
@@ -314,8 +380,9 @@ class WatsonXService:
             
             generation_time_ms = int((time.time() - start_time) * 1000)
             
-            # Parse the response
-            risk_category, reasoning = self.parse_risk_category(response)
+            # Clean and parse the response
+            cleaned_response = self._clean_response(response)
+            risk_category, reasoning = self.parse_risk_category(cleaned_response)
             
             # Estimate tokens
             tokens_consumed = len(prompt + response) // 4
@@ -447,6 +514,8 @@ class WatsonXService:
         country: str,
         risk_score: float,
         document_context: str,
+        account_age_days: int = None,
+        transaction_count_30d: int = None,
     ) -> Dict[str, Any]:
         """
         Analyze transaction compliance using RAG (Retrieval Augmented Generation).
@@ -486,6 +555,8 @@ class WatsonXService:
             country=country,
             risk_score=risk_score,
             document_context=document_context,
+            account_age_days=account_age_days,
+            transaction_count_30d=transaction_count_30d,
         )
         
         # Generate response
@@ -496,8 +567,9 @@ class WatsonXService:
             
             generation_time_ms = int((time.time() - start_time) * 1000)
             
-            # Parse the response
-            parsed = self._parse_compliance_analysis(response)
+            # Clean and parse the response
+            cleaned_response = self._clean_response(response)
+            parsed = self._parse_compliance_analysis(cleaned_response)
             
             # Estimate tokens
             tokens_consumed = len(prompt + response) // 4
@@ -531,8 +603,17 @@ class WatsonXService:
         country: str,
         risk_score: float,
         document_context: str,
+        account_age_days: int = None,
+        transaction_count_30d: int = None,
     ) -> str:
         """Build RAG prompt for compliance analysis."""
+        # Build AML indicators section
+        aml_indicators = ""
+        if account_age_days is not None:
+            aml_indicators += f"\nAccount Age: {account_age_days} days"
+        if transaction_count_30d is not None:
+            aml_indicators += f"\nTransaction Velocity: {transaction_count_30d} large transactions in past 30 days"
+        
         prompt = f"""You are a compliance analyst reviewing a banking transaction. Use the provided compliance documents to determine if this transaction violates any regulations.
 
 === COMPLIANCE DOCUMENTS ===
@@ -542,7 +623,7 @@ class WatsonXService:
 Customer: {customer_name}
 Amount: ${amount:,.2f} USD
 Country: {country}
-Current Risk Score: {risk_score:.2f} (0.0 = low risk, 1.0 = high risk)
+Current Risk Score: {risk_score:.2f} (0.0 = low risk, 1.0 = high risk){aml_indicators}
 
 === INSTRUCTIONS ===
 Based on the compliance documents above, analyze this transaction and provide your assessment in EXACTLY this format:
@@ -676,21 +757,29 @@ CONFIDENCE: 0.85"""
         Returns:
             (rationale, recommended_action) tuple
         """
-        # Try to split by common delimiters
-        if "Recommended action:" in text:
-            parts = text.split("Recommended action:", 1)
-            rationale = parts[0].strip()
-            action = parts[1].strip()
-        elif "Recommendation:" in text:
-            parts = text.split("Recommendation:", 1)
-            rationale = parts[0].strip()
-            action = parts[1].strip()
-        else:
-            # If no clear split, use the whole text as rationale
-            # and generate a default action
-            rationale = text.strip()
-            action = "Review this transaction for potential risk factors."
-
+        import re
+        
+        # Try to split by common delimiters (case-insensitive)
+        # Handle numbered list format: "3. Recommended action:"
+        patterns = [
+            r'(?:^\d+\.\s*)?Recommended action:\s*',
+            r'(?:^\d+\.\s*)?Recommendation:\s*',
+        ]
+        
+        rationale = text.strip()
+        action = "Review this transaction for potential risk factors."
+        
+        for pattern in patterns:
+            match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
+            if match:
+                # Split at the match
+                rationale = text[:match.start()].strip()
+                action = text[match.end():].strip()
+                break
+        
+        # Clean up any trailing numbered items in rationale
+        rationale = re.sub(r'\n\d+\.\s*$', '', rationale).strip()
+        
         return rationale, action
 
     def _estimate_confidence(self, risk_score: float, explanation: str) -> float:

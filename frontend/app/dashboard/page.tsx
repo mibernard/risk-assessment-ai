@@ -25,7 +25,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Filter, SortAsc, FileText, X, FolderOpen } from "lucide-react";
+import {
+  Search,
+  Filter,
+  SortAsc,
+  FileText,
+  X,
+  FolderOpen,
+  AlertTriangle,
+  TrendingUp,
+  Clock,
+} from "lucide-react";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -89,19 +99,6 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="mt-4 flex md:mt-0 md:ml-4 gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setQueryName("");
-                  setQueryCountry("");
-                  setRisk("1000");
-                  setStatus("all");
-                  setRiskCategory("");
-                }}
-              >
-                <X className="h-4 w-4 mr-2" />
-                Clear Filters
-              </Button>
               <Button asChild variant="outline">
                 <Link href="/documents">
                   <FolderOpen className="h-4 w-4 mr-2" />
@@ -150,7 +147,93 @@ export default function DashboardPage() {
         )}
 
         {!loading && !error && cases.length > 0 && (
-          <div className="space-y-4">
+          <div className="space-y-6">
+            {/* Summary Cards */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {/* Total Cases */}
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Total Cases
+                      </p>
+                      <p className="text-3xl font-bold">{cases.length}</p>
+                    </div>
+                    <FileText className="h-10 w-10 text-blue-500 opacity-50" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Flagged transactions
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* High Risk */}
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        High Risk
+                      </p>
+                      <p className="text-3xl font-bold text-red-600">
+                        {cases.filter((c) => c.risk_score >= 0.7).length}
+                      </p>
+                    </div>
+                    <AlertTriangle className="h-10 w-10 text-red-500 opacity-50" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Risk score ≥ 70%
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Under Review */}
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Under Review
+                      </p>
+                      <p className="text-3xl font-bold text-yellow-600">
+                        {cases.filter((c) => c.status === "reviewing").length}
+                      </p>
+                    </div>
+                    <Clock className="h-10 w-10 text-yellow-500 opacity-50" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Pending analysis
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Average Risk */}
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Avg Risk Score
+                      </p>
+                      <p className="text-3xl font-bold text-orange-600">
+                        {(
+                          (cases.reduce((sum, c) => sum + c.risk_score, 0) /
+                            cases.length) *
+                          100
+                        ).toFixed(0)}
+                        %
+                      </p>
+                    </div>
+                    <TrendingUp className="h-10 w-10 text-orange-500 opacity-50" />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Across all cases
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
             {/* Filters Card */}
             <Card>
               <CardContent>
@@ -160,62 +243,74 @@ export default function DashboardPage() {
                       <Filter className="h-5 w-5" />
                       Filters & Search
                     </h3>
-                    <span className="text-sm text-muted-foreground">
-                      {
-                        cases.filter(
-                          (caseItem) =>
-                            caseItem.customer_name
-                              .toLowerCase()
-                              .includes(queryName.toString().toLowerCase()) &&
-                            caseItem.country
-                              .toLowerCase()
-                              .includes(
-                                queryCountry.toString().toLowerCase()
-                              ) &&
-                            (risk === "0.7"
-                              ? caseItem.risk_score >= 0.7
-                              : risk === "0.4"
-                              ? caseItem.risk_score < 0.7 &&
-                                caseItem.risk_score >= 0.4
-                              : risk === "0"
-                              ? caseItem.risk_score >= 0 &&
-                                caseItem.risk_score < 0.4
-                              : caseItem.risk_score >= 0) &&
-                            (status === "all"
-                              ? caseItem.status.includes("")
-                              : caseItem.status === status)
-                        ).length
-                      }{" "}
-                      results
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-muted-foreground">
+                        {
+                          cases.filter(
+                            (caseItem) =>
+                              caseItem.customer_name
+                                .toLowerCase()
+                                .includes(queryName.toString().toLowerCase()) &&
+                              caseItem.country
+                                .toLowerCase()
+                                .includes(
+                                  queryCountry.toString().toLowerCase()
+                                ) &&
+                              (risk === "0.7"
+                                ? caseItem.risk_score >= 0.7
+                                : risk === "0.4"
+                                ? caseItem.risk_score < 0.7 &&
+                                  caseItem.risk_score >= 0.4
+                                : risk === "0"
+                                ? caseItem.risk_score >= 0 &&
+                                  caseItem.risk_score < 0.4
+                                : caseItem.risk_score >= 0) &&
+                              (status === "all"
+                                ? caseItem.status.includes("")
+                                : caseItem.status === status)
+                          ).length
+                        }{" "}
+                        results
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setQueryName("");
+                          setQueryCountry("");
+                          setRisk("1000");
+                          setStatus("all");
+                          setRiskCategory("");
+                        }}
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Clear Filters
+                      </Button>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                     {/* Search Name */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                        <Search className="h-4 w-4" />
+                      <label className="text-sm font-medium text-muted-foreground">
                         Customer Name
                       </label>
                       <Input
                         placeholder="Search by name..."
                         value={queryName}
                         onChange={(e) => setQueryName(e.target.value)}
-                        className="w-full"
                       />
                     </div>
 
                     {/* Search Country */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                        <Search className="h-4 w-4" />
+                      <label className="text-sm font-medium text-muted-foreground">
                         Country
                       </label>
                       <Input
                         placeholder="Search by country..."
                         value={queryCountry}
                         onChange={(e) => setQueryCountry(e.target.value)}
-                        className="w-full"
                       />
                     </div>
 
@@ -240,18 +335,23 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Risk Category */}
-                    <div className="space y-2">
-                      <label className="text-sm font-medium text-muted-foreground">Risk Category</label>
-                      <Select value={riskCategory} onValueChange={setRiskCategory}>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Risk Category
+                      </label>
+                      <Select
+                        value={riskCategory}
+                        onValueChange={setRiskCategory}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select risk category" />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="Fraud">Fraud</SelectItem>
-                          <SelectItem value="Money Laundering">Money Laundering</SelectItem>
-                          <SelectItem value="Sanctions">
-                            Sanctions
+                          <SelectItem value="Money Laundering">
+                            Money Laundering
                           </SelectItem>
+                          <SelectItem value="Sanctions">Sanctions</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -276,8 +376,7 @@ export default function DashboardPage() {
 
                     {/* Sort */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                        <SortAsc className="h-4 w-4" />
+                      <label className="text-sm font-medium text-muted-foreground">
                         Sort By
                       </label>
                       <Select onValueChange={sortCases} defaultValue="">
@@ -376,9 +475,8 @@ export default function DashboardPage() {
                               ? caseItem.status.includes("")
                               : caseItem.status === status) &&
                             (riskCategory === ""
-                              ? caseItem.category
-                                  .toLowerCase()
-                                  .includes("")
+                              ? caseItem.category?.toLowerCase().includes("") ??
+                                true
                               : caseItem.category === riskCategory)
                         )
                         .map((caseItem) => (

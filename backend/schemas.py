@@ -16,6 +16,8 @@ class CaseBase(BaseModel):
     country: str = Field(..., min_length=2, max_length=100, description="ISO country code")
     risk_score: float = Field(..., ge=0.0, le=1.0, description="Risk score between 0 and 1")
     status: Literal["new", "reviewing", "resolved"]
+    account_age_days: int = Field(..., ge=0, description="Days since account was opened (AML indicator)")
+    transaction_count_30d: int = Field(..., ge=0, description="Number of large transactions in past 30 days (velocity indicator)")
     
     @field_validator("amount")
     @classmethod

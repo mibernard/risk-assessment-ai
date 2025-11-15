@@ -23,6 +23,8 @@ export interface Case {
   model_version?: string;
   tokens_used?: number;
   category?: string | "Unknown";
+  account_age_days: number; // AML indicator: days since account opened
+  transaction_count_30d: number; // AML indicator: transaction velocity
 }
 
 export interface Explanation {
@@ -253,7 +255,9 @@ export async function getRiskScore(caseId: string): Promise<RiskScore | null> {
   return response.json();
 }
 
-export async function getRiskCategory(caseId: string): Promise<RiskCategory | null> {
+export async function getRiskCategory(
+  caseId: string
+): Promise<RiskCategory | null> {
   const response = await fetch(`${API_URL}/risk-categorize/${caseId}`, {
     method: "GET",
     headers: {
@@ -268,9 +272,8 @@ export async function getRiskCategory(caseId: string): Promise<RiskCategory | nu
   if (!response.ok) {
     throw new Error(`Failed to fetch risk category`);
   }
-  
+
   return response.json();
-  
 }
 
 /**
