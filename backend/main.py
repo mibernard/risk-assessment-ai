@@ -565,7 +565,7 @@ async def calculate_risk_category(case_id: str):
             RISK_CATEGORIES_DB[case_id] = response
             
             # Check if budget is getting low
-            # token_status = watsonx_service.get_token_status()
+            # token_status = watsonx_service.get_token_usage()
             #if token_status["percentage_used"] >= 90:
             #   print(f"⚠️  WARNING: {token_status['percentage_used']:.1f}% of token budget used!")
             
@@ -661,7 +661,7 @@ async def calculate_risk_score(request: RiskScoreRequest):
             RISK_SCORES_DB[request.case_id] = response
             
             # Check if budget is getting low
-            token_status = watsonx_service.get_token_status()
+            token_status = watsonx_service.get_token_usage()
             if token_status["percentage_used"] >= 90:
                 print(f"⚠️  WARNING: {token_status['percentage_used']:.1f}% of token budget used!")
             
@@ -1094,7 +1094,7 @@ async def analyze_compliance(request: ComplianceAnalysisRequest):
             )
             
             # Check if budget is getting low
-            token_status = watsonx_service.get_token_status()
+            token_status = watsonx_service.get_token_usage()
             if token_status["percentage_used"] >= 90:
                 print(f"⚠️  WARNING: {token_status['percentage_used']:.1f}% of token budget used!")
             
@@ -1102,14 +1102,22 @@ async def analyze_compliance(request: ComplianceAnalysisRequest):
             
         except Exception as e:
             error_msg = str(e)
+            print(f"\n{'='*60}")
+            print(f"⚠️  WATSONX.AI COMPLIANCE ANALYSIS ERROR")
+            print(f"{'='*60}")
+            print(f"Error Type: {type(e).__name__}")
+            print(f"Error Message: {error_msg}")
+            print(f"Document Context Length: {len(document_context)} chars")
+            print(f"Documents Found: {len(documents_used)}")
+            print(f"{'='*60}\n")
+            
             if "budget exceeded" in error_msg.lower():
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                     detail="Token budget exceeded. Cannot generate more AI responses.",
                 )
             else:
-                print(f"⚠️  watsonx.ai error: {error_msg}")
-                print("   Falling back to mock compliance analysis")
+                print("   Falling back to rule-based compliance analysis")
     
     # Fallback: Rule-based compliance analysis
     violations = []
