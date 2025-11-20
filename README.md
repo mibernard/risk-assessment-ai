@@ -37,9 +37,7 @@ A proof-of-concept AI solution that analyzes banking transactions for fraud risk
 
 **Prerequisites:**
 
-- **Python 3.10 - 3.12** (recommended)
-  - ⚠️ **Windows users**: Python 3.13+ will fail - use 3.10-3.12
-  - macOS/Linux: Python 3.13+ may work with limitations
+- **Python 3.10 - 3.12**
 - **Node.js 18+** for frontend
 - **IBM watsonx.ai** credentials (see step 2)
 
@@ -48,7 +46,7 @@ A proof-of-concept AI solution that analyzes banking transactions for fraud risk
 git clone https://github.com/your-team/risk-assessment-ai.git
 cd risk-assessment-ai
 
-# Backend setup (Python 3.10-3.12 recommended)
+# Backend setup
 cd backend
 python -m venv venv
 
@@ -265,38 +263,6 @@ The app comes with 10 pre-loaded sample cases covering different risk levels:
 
 ---
 
-## 🎯 IBM SkillsBuild Requirements
-
-This project fulfills IBM SkillsBuild evaluation criteria:
-
-### ✅ Completeness (5 pts)
-
-- All API endpoints functional
-- watsonx.ai integration ready
-- Complete proof-of-concept
-
-### ✅ Creativity (5 pts)
-
-- Agentic reasoning for risk assessment
-- Multi-step analysis pipeline
-- Explainable AI with confidence scores
-
-### ✅ Design/UX (5 pts)
-
-- Professional UI with shadcn/ui
-- Intuitive navigation
-- Clear risk visualizations
-
-### ✅ Effectiveness (5 pts)
-
-- Solves real banking problem
-- Scalable architecture
-- Token budget management
-
-**See [docs/IBM_COMPLIANCE.md](docs/IBM_COMPLIANCE.md) for full requirements.**
-
----
-
 ### watsonx.ai issues
 
 See [docs/WATSONX_INTEGRATION.md](docs/WATSONX_INTEGRATION.md) for:
@@ -306,14 +272,6 @@ See [docs/WATSONX_INTEGRATION.md](docs/WATSONX_INTEGRATION.md) for:
 - Common error solutions
 
 ---
-
-## 📞 Support & Resources
-
-### IBM SkillsBuild Resources
-
-- Weekly coaching sessions
-- IBM mentor office hours
-- Technical support via Slack
 
 ### Documentation
 
